@@ -9,7 +9,7 @@
 require_once('includes.inc.php');
 include ('migration.php');
 /*require_once($_ARCHON->Script);*/
-session_start();
+//session_start();
 global $_ARCHON;
  
 
@@ -17,9 +17,9 @@ isset($_ARCHON) or die();
 //Get all Repositories for migration
 $arrRepositories = $_ARCHON->getAllRepositories();
 $arrUsers = $_ARCHON->getAllUsers();
+$repository_Map = array();
 
-
-//print_r($arrRepositories);
+//print_r($arrRepositories);S
 
 
 
