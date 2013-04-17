@@ -11,7 +11,84 @@
  *
  * @author randy
  */
- function archrequest($uri,$header,$data=null,$verb){
+include('class-datahandler.php');
+function get_session($site){
+    $response = rest_helper($site.'/users/admin/login', array('password'=>'admin'),'POST');
+     //print_r($response);
+    return $response->session;
+}
+
+
+function rest_helper($url, $params = null, $verb = 'GET', $format = 'json', $session = null, $json = null)
+{
+    $cparams = array(
+        'http' => array(
+            'method' => $verb,
+            'ignore_errors' => true
+        )
+    );
+    if ($session) {
+        $cparams['http']['header'] = "X-ArchivesSpace-Session: $session";
+    }
+
+    // if ($params['data']) {
+    //     $cparams['http']['content'] = $params['data'];
+    // }
+
+
+    if ($params !== null) {
+        $params = http_build_query($params);
+        print_r("POST PARAMS");
+        print_r($params);
+        if ($verb == 'POST') {
+            if ($json) {
+                $cparams['http']['content'] = $json;
+                $url .= '?' . $params;
+            } else {
+                $cparams['http']['content'] = $params;
+            }
+        } else {
+            $url .= '?' . $params;
+        }
+    }
+
+    $context = stream_context_create($cparams);
+    $fp = fopen($url, 'rb', false, $context);
+    if (!$fp) {
+        $res = false;
+    } else {
+        // If you're trying to troubleshoot problems, try uncommenting the
+        // next two lines; it will show you the HTTP response headers across
+        // all the redirects:
+        $meta = stream_get_meta_data($fp);
+        var_dump($meta['wrapper_data']);
+        $res = stream_get_contents($fp);
+    }
+
+    if ($res === false) {
+        throw new Exception("$verb $url failed: $php_errormsg");
+    }
+
+    switch ($format) {
+        case 'json':
+            $r = json_decode($res);
+            if ($r === null) {
+                throw new Exception("failed to decode $res as json");
+            }
+            return $r;
+
+        case 'xml':
+            $r = simplexml_load_string($res);
+            if ($r === null) {
+                throw new Exception("failed to decode $res as xml");
+            }
+            return $r;
+    }
+    return $res;
+}
+
+
+function archrequest($uri,$header,$data=null,$verb){
 
 print_r($data);
 
@@ -63,7 +140,12 @@ switch (json_last_error()) {
 
     return json_decode($result,true) ;*/
  }
-class Aspace_object{
+class Aspace_group{
+    public $uri="";
+    public $group_code="";
+    public $description="";
+    public $member_usernames= Array('');
+    public $grants_permissions=Array('');
 
 }
 
@@ -86,7 +168,7 @@ class Aspace_repository {
 	public  $email_signature = "";
 	
 	
- function connect($session,$site,$data){
+ /*function connect($session,$site,$data){
 				var_dump($data);
          $url = $site."/repositories";
 
@@ -100,7 +182,7 @@ class Aspace_repository {
          //extract ($responseSess);
     //get the session token
    //return $session;
-    }
+    }*/
 }
 class Aspace_user {
 
@@ -108,7 +190,7 @@ class Aspace_user {
     public  $username = "----";
 
     public  $name = "---";
-    function connect($session,$site,$data){
+  /*  function connect($session,$site,$data){
         var_dump($data);
         $url = $site."/users";
 
@@ -122,7 +204,7 @@ class Aspace_user {
         //extract ($responseSess);
         //get the session token
         //return $session;
-    }
+    }*/
 
 
 
