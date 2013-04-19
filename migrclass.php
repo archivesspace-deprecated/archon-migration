@@ -11,7 +11,8 @@
  *
  * @author randy
  */
-include('class-datahandler.php');
+include ('class-datahandler.php');
+include ('json-model.php');
 function get_session($site){
     $response = rest_helper($site.'/users/admin/login', array('password'=>'admin'),'POST');
      //print_r($response);
@@ -53,6 +54,7 @@ function rest_helper($url, $params = null, $verb = 'GET', $format = 'json', $ses
     }
 
     $context = stream_context_create($cparams);
+    print_r($cparams);
     $fp = fopen($url, 'rb', false, $context);
     if (!$fp) {
         $res = false;
@@ -151,7 +153,7 @@ class Aspace_group{
 
 
 
-class Aspace_repository {
+class Aspace_repository extends JSONRecord {
 	public  $name = "";
 	public  $repo_code = "";
 	public  $address_1 = "";

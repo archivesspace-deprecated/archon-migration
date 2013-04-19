@@ -1,9 +1,7 @@
 <?php
 
 include ('migrclass.php');
-
-
-
+// include ('json-model.php');
 
 
 
@@ -14,7 +12,10 @@ function Begin_ArchonMigration($site,$user,$password)
 	//	$password='admin';
 	//	$user='admin';
 
+    $GLOBALS['aspace_backend'] = $site;
+
     $session = get_session($site);
+    $GLOBALS['aspace_session'] = $session;
 		
 			
 			if (strlen($session)>0){
@@ -26,6 +27,7 @@ function Begin_ArchonMigration($site,$user,$password)
 			
 		return $session;
 }
+
 
 
 function Process_Repository ($arrRepositories,$session,$site)
@@ -60,14 +62,9 @@ function Process_Repository ($arrRepositories,$session,$site)
 								$rep->email=$Email;
 								$rep->url=$URL;
 								$rep->email_signature=$EmailSignature;
-							$data =json_encode($rep);
-							print_r($rep);
-			        	//$repid=$rep->connect($session, $site, $data);
+							  $id = $rep->save();
+                $repository_Map[$ID] = $id;
 
-                      $qreponse= rest_helper($site."/repositories",'','POST', 'json', $session,$data);
-                      print_r($qreponse);
-                      if (isset($qreponse->id)){$repository_Map[$ID] = $qreponse->id;
-                      }
 			      }
 
 
