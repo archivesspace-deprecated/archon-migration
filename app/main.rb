@@ -2,7 +2,10 @@ require 'sinatra'
 require 'sinatra/assetpack'
 
 require_relative 'lib/startup'
+require_relative 'lib/migrate'
 
+set :port, 4568
+ 
 set :root, File.dirname(__FILE__)
 register Sinatra::AssetPack
 
@@ -17,7 +20,6 @@ assets {
 }
 
 Dir.glob(File.dirname(File.absolute_path(__FILE__)) + '/lib/*.rb').each do |f|
-  p f
   require f
 end
 
@@ -31,11 +33,11 @@ get '/jobs/new' do
 end
 
 post '/jobs' do
-  $log.debug("POST /jobs with params: #{request.params.inspect}")
+  $log.debug("POST /jobs with params: #{params.inspect}")
 
-  m = MigrationController.new(request.params)
+  m = MigrationWorker.new(params[:job])
 
-  m.migrate!
+  m.migrate
 
   @archon_status = "ok"
 
