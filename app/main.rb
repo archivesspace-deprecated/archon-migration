@@ -36,7 +36,6 @@ post '/jobs' do
   $log.debug("POST /jobs with params: #{params.inspect}")
 
   m = MigrationWorker.new(params[:job])
-
   m.migrate
 
   @archon_status = "ok"

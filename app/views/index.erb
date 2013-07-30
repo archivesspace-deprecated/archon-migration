@@ -1,3 +1,5 @@
+<h1>Archon Migration Service</h1>
 <p>
-Welcome to the Archon Migration Tool
+Welcome to the Archon Migration Service. This software can be used to migrate an <a href="htt://www.archon.org">Archon</a> database to an <a href="http://archivesspace.org">ArchivesSpace</a> database. 
 </p>
+<%= ERB.new(File.read(File.dirname(__FILE__)+'/jobs/new.erb')).result(binding) %>

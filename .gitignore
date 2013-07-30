@@ -14,3 +14,11 @@
 # Ignore all logfiles and tempfiles.
 /log/*.log
 /tmp
+
+# Ignore vendor and downloads directories
+/vendor
+/downloads
+
+# Ignore the 'ignore' directory
+/ignore
+

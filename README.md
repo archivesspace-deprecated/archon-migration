@@ -1,4 +1,4 @@
-Archon2ArchiveSpace README
+Archon2ArchivesSpace README
 ================
 # Status
 
@@ -28,7 +28,7 @@ Now run the application:
 
 # Using the Service
 
-Make sure you have a running Archon instance and a running ArchiveSpace instane. 
+Make sure you have a running Archon instance and a running ArchiveSpace instance. 
 You will also need account credentials for each service. It is recommended that 
 you created a separate account called 'migration_user' and assign this user the 
 required permissions in each application.
