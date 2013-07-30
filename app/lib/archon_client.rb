@@ -1,22 +1,56 @@
 require 'net/http/persistent'
 require 'json'
+require_relative 'startup'
 
-module ArchonClient
+module Archon
+
+  @@record_types = {}
+  
+  def self.record_type(key, &block)
+    if block_given?
+      @@record_types[key] = Class.new(ArchonRecord, &block)
+    else
+      @@record_types[key]
+    end
+  end
+
+
+  def self.init
+    Dir.glob(File.join(File.dirname(__FILE__),
+                       '../',
+                       'models', 
+                       'archon_*.rb')).each do |file|
+      load(file)
+    end
+  end
+
+
+  class ArchonRecord
+
+    # needs pagination
+    def self.each
+      result_set = Thread.current[:archon_client].get_json(endpoint)
+      result_set.each {|k, v| yield k, v }
+    end
+
+
+    def self.endpoint
+      "/?p=#{@p}&batch_start=1"
+    end
+  end
+
 
   module HTTP
 
-    @archon_url = "http://localhost/archon/"
-
-
-    def self.http
+    def http
       @http ||= Net::HTTP::Persistent.new 'archon_client'
       @http.read_timeout = 1200
       @http
     end
 
 
-    def self.get_json(endpoint)
-      uri = URI.parse("#{@archon_url}#{endpoint}")
+    def get_json(endpoint)
+      uri = URI.parse("#{@url}#{endpoint}")
 
       req = Net::HTTP::Get.new(uri.request_uri)
       response = http_request(uri, req)
@@ -31,11 +65,11 @@ module ArchonClient
     end
 
 
-    def self.http_request(uri, req, &block)
-      archon_session = current_archon_session
+    def http_request(uri, req, &block)
+      session = current_archon_session
 
-      req['SESSION'] = current_archon_session
-      req['COOKIE'] = "archon=#{current_archon_session}"
+      req['SESSION'] = session
+      req['COOKIE'] = "archon=#{session}"
 
       req.basic_auth("admin", "admin")
       response = http.request(uri, req)
@@ -44,26 +78,54 @@ module ArchonClient
     end
 
 
-    def self.current_archon_session      
-      init_session unless Thread.current[:archon_session]
-      Thread.current[:archon_session]
+    def current_archon_session      
+      init_session unless @session
+#      Thread.current[:archon_session]
+      @session
     end
 
 
-    def self.init_session
-
-      uri = URI.parse(@archon_url + "?p=core/authenticate&apilogin=admin&apipassword=admin")
+    def init_session
+      $log.debug("Logging into Archon")
+      uri = URI.parse(@url + "/?p=core/authenticate&apilogin=admin&apipassword=admin")
       req = Net::HTTP::Get.new(uri.request_uri)
-      
-      response = http_request(uri, req)
+ 
+      req.basic_auth(@user, @password)
+      response = http.request(uri, req)
 
       raise "Session Init error" unless response.code == '200'
 
       json = JSON::parse(response.body)
+      @session = json['session']
+    end
+  end
 
-      Thread.current[:archon_session] = json['session']
+
+  class Client
+    include HTTP
+
+    def initialize(opts)
+      @url = opts[:url]
+
+      @user = opts[:user]
+      @password = opts[:password]
+
+      init_session
+
+      Thread.current[:archon_client] = self
     end
 
+
+    def has_session?
+      @session ? true : false
+    end
+
+
+    def record_type(key)
+      Archon.record_type(key)
+    end
   end
+
 end
-      
+
+Archon.init

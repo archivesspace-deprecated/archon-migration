@@ -1,6 +1,8 @@
 require 'sinatra'
 require 'sinatra/assetpack'
 
+require_relative 'lib/startup'
+
 set :root, File.dirname(__FILE__)
 register Sinatra::AssetPack
 
@@ -15,6 +17,7 @@ assets {
 }
 
 Dir.glob(File.dirname(File.absolute_path(__FILE__)) + '/lib/*.rb').each do |f|
+  p f
   require f
 end
 
@@ -28,12 +31,13 @@ get '/jobs/new' do
 end
 
 post '/jobs' do
-  p request.params
+  $log.debug("POST /jobs with params: #{request.params.inspect}")
 
-  archon_params = params['job'].select{ |p| p =~ /archon/ }
-  archon = ArchonConnection.new(archon_params)
-  
-  @archon_status = archon.status
+  m = MigrationController.new(request.params)
+
+  m.migrate!
+
+  @archon_status = "ok"
 
   erb :"jobs/results"
   # do the long job
