@@ -8,8 +8,8 @@ This software and this README are in a development state. Satisfactory results a
 
 Checkout the project from Github:
   
-	  https://github.com/lcdhoffman/archon-migration.git
-  	cd archon-migration
+		https://github.com/lcdhoffman/archon-migration.git
+		cd archon-migration
 
 Download the necessary ArchivesSpace libraries:
 
