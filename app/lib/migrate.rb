@@ -48,6 +48,7 @@ class MigrationJob
       Archon.record_type(:subject).each do |id, subject|
 
         $log.debug("Migrating Record: #{id}")
+        $log.debug(subject)
 
         if %w(3 8 10).include?(subject["SubjectTypeID"])
           # build an agent
@@ -64,6 +65,7 @@ class MigrationJob
           s = JSONModel.JSONModel(:subject).new
           s.uri = s.class.uri_for(subject["ID"])
           s.terms = terms
+          s.external_ids = [{:external_id => subject["ID"], :source => "Archon"}]
           s.vocabulary = '/vocabularies/1'
           batch << s
         end

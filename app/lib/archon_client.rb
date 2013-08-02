@@ -54,7 +54,7 @@ module Archon
 
       req = Net::HTTP::Get.new(uri.request_uri)
       response = http_request(uri, req)
-
+      $log.debug("Raw Archon response: #{response.inspect}")
       if response.code != '200'
         raise "ERROR Getting JSON #{response.inspect}"
       else
@@ -95,7 +95,9 @@ module Archon
       req.basic_auth(@user, @password)
       response = http.request(uri, req)
 
-      raise "Session Init error" unless response.code == '200'
+      if response.code != '200' || response.body =~ /Authentication Failed/
+        raise ArchonAuthenticationError, "Could not log in to Archon"
+      end
 
       json = JSON::parse(response.body)
       @session = json['session']
@@ -126,6 +128,10 @@ module Archon
     def record_type(key)
       Archon.record_type(key)
     end
+  end
+
+
+  class ArchonAuthenticationError < StandardError
   end
 
 end

@@ -50,8 +50,14 @@ post '/jobs' do
     begin
       m = MigrationJob.new(params[:job])
       m.migrate(y)
+    rescue JSONModel::ValidationException => e
+      body = "Errors: #{e.errors.to_s}"
+      if e.respond_to?(:invalid_object)
+        body << "<br />Offending record: [ #{e.invalid_object.to_s} ]"
+      end
+      y << JSON.generate({:type => :error, :body => body}) + "---\n"
     rescue Exception => e
-      $log.debug("Error: "+e.to_s)
+      $log.debug("Server Error: "+e.to_s)
       y << JSON.generate({:type => :error, :body => e.to_s}) + "---\n"
     end
   end

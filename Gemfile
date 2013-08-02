@@ -1,7 +1,5 @@
 source :rubygems
 
-#ruby=ruby-1.9.3-p429@archon-migration
-
 gem 'arel'
 gem 'atomic'
 gem 'builder'
@@ -27,7 +25,6 @@ gem 'sass'
 gem 'sdoc'
 gem 'sinatra'
 gem 'sinatra-assetpack'
-gem 'sqlite3'
 gem 'thread_safe'
 gem 'tilt'
 gem 'tzinfo'

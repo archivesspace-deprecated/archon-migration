@@ -117,7 +117,10 @@ module ArchivesSpace
           end
 
         else
-          y << json_chunk({"error" => "ArchivesSpace server error: #{response.code}"})
+          y << json_chunk({
+                            :type => 'error',
+                            :body => "ArchivesSpace server error: #{response.code}"
+                          })
         end
       end
     end
