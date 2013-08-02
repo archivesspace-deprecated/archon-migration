@@ -1,6 +1,6 @@
+require_relative 'startup'
 require 'net/http/persistent'
 require 'json'
-require_relative 'startup'
 
 module Archon
 
@@ -88,6 +88,8 @@ module Archon
     def init_session
       $log.debug("Logging into Archon")
       uri = URI.parse(@url + "/?p=core/authenticate&apilogin=admin&apipassword=admin")
+      raise URIException, "URI format error: #{@url}" unless URI::HTTP === uri
+
       req = Net::HTTP::Get.new(uri.request_uri)
  
       req.basic_auth(@user, @password)

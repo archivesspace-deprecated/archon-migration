@@ -1,5 +1,13 @@
 <h1>Archon Migration Service</h1>
+<div class="pure-g">
+<div id="form-wrapper" class="pure-u-1-2">
+<%= ERB.new(File.read(File.dirname(__FILE__)+'/jobs/new.erb')).result(binding) %>
+</div>
+
+<div id="status-console" class="pure-u-1-2">
 <p>
 Welcome to the Archon Migration Service. This software can be used to migrate an <a href="htt://www.archon.org">Archon</a> database to an <a href="http://archivesspace.org">ArchivesSpace</a> database. 
 </p>
-<%= ERB.new(File.read(File.dirname(__FILE__)+'/jobs/new.erb')).result(binding) %>
+<p>Fill out the form to the left and click the "Start Migration" button. Leave this window open while the migration job runs. Before proceeding, make sure your connection is stable and can be left open for...a while.
+</div>
+</div>

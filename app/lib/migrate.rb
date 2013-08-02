@@ -1,19 +1,16 @@
-require 'rubygems'
-
 require_relative 'startup'
 require_relative 'archon_client'
 require_relative 'archivesspace_client'
 
 
-class MigrationWorker
-
+class MigrationJob
 
   def initialize(params)
     @args = params
 
     # 1 job per thread
-    raise "Worker thread occupied." if Thread.current[:archon_migration_worker]
-    Thread.current[:archon_migration_worker] = self
+    raise "Job thread occupied." if Thread.current[:archon_migration_job]
+    Thread.current[:archon_migration_job] = self
 
 
     @archivesspace = ArchivesSpace::Client.new(
@@ -41,12 +38,12 @@ class MigrationWorker
   end
 
 
-  def migrate(opts = {})
+  def migrate(y)
 
     Thread.current[:selected_repo_id] = 1
 
     #open up the batch file
-    @archivesspace.import do |batch|
+    @archivesspace.import(y) do |batch|
       
       Archon.record_type(:subject).each do |id, subject|
 
@@ -74,7 +71,7 @@ class MigrationWorker
     end
   end
 
-    
+
   def build_terms(subject, terms = [])
     if subject["Parent"]
       terms = build_terms(subject["Parent"], terms)

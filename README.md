@@ -15,7 +15,7 @@ Download the necessary ArchivesSpace libraries:
 
 		./scripts/import_client_libs.sh v0.6.2
 
-This will attempt to download the ArhivesSpace source code for ArchivesSpace 0.6.2.
+This will attempt to download the ArchivesSpace source code for ArchivesSpace 0.6.2.
 
 Install the gems in the Gemfile::
 

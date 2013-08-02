@@ -1,34 +1,34 @@
 <!--<h1>New Migration Job</h1>-->
-<form action="/jobs" method="post" class="pure-form pure-form-aligned">
+<form action="/jobs" method="post" class="pure-form pure-form-aligned" id="migration-form">
   <h3>Archon Connection</h3>
   <fieldset>
 
     <div class="pure-control-group">
       <label for="job_archon_url">Archon URL:</label>
-      <input id="job_archon_url" name="job[archon_url]" type="text" value="" /> 
+      <input id="job_archon_url" name="job[archon_url]" type="text" value="" required/> 
     </div>
     <div class="pure-control-group">
       <label for="job_archon_user">Archon User:</label>
-      <input id="job_archon_user" name="job[archon_user]" type="text" value="" /> 
+      <input id="job_archon_user" name="job[archon_user]" type="text" value="" required/> 
     </div>
     <div class="pure-control-group">
       <label for="job_archon_password">Archon Password:</label>
-      <input id="job_archon_password" name="job[archon_password]" type="password" value="" />
+      <input id="job_archon_password" name="job[archon_password]" type="password" value="" required/>
     </div>
   </fieldset>
   <h3>ASpace Connection</h3>
   <fieldset>
     <div class="pure-control-group">
       <label for="job_aspace_url">ASpace URL:</label>
-      <input id="job_aspace_url" name="job[aspace_url]" type="text" value="" /> 
+      <input id="job_aspace_url" name="job[aspace_url]" type="text" value="" required/> 
     </div>
     <div class="pure-control-group">
       <label for="job_aspace_user">Aspace User:</label>
-      <input id="job_aspace_user" name="job[aspace_user]" type="text" value="" />
+      <input id="job_aspace_user" name="job[aspace_user]" type="text" value="" required/>
     </div>
     <div class="pure-control-group">
       <label for="job_aspace_password">Aspace Password:</label>
-      <input id="job_aspace_password" name="job[aspace_password]" type="password" value="" />
+      <input id="job_aspace_password" name="job[aspace_password]" type="password" value="" required/>
     </div>
 
   </fieldset>
@@ -40,6 +40,6 @@
     </div>
   </fieldset>
   <div class="pure-controls">
-    <button type="submit" class="pure-button">Start Migration</button>
+    <button type="submit" class="pure-button" id="start-migration">Start Migration</button>
   </div>
 </form> 
