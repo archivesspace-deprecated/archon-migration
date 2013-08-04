@@ -4,7 +4,7 @@ require 'sinatra/assetpack'
 require_relative 'lib/startup'
 require_relative 'lib/migrate'
 
-set :port, 4568
+set :port, Appdata.port_number
 set :root, File.dirname(__FILE__)
 set :show_exceptions, :after_handler
 

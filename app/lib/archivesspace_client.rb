@@ -7,7 +7,7 @@ module ArchivesSpace
 
   def self.init
 
-    $:.unshift File.dirname(File.absolute_path(__FILE__)) + "/../../vendor/archivesspace/client_tools/#{ASPACE_VERSION}/"
+    $:.unshift File.dirname(File.absolute_path(__FILE__)) + "/../../vendor/archivesspace/client_tools/#{Appdata.aspace_version}/"
 
     Kernel.module_eval do
       alias_method :orig_require, :require

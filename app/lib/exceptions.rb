@@ -1,0 +1,2 @@
+class URIException < StandardError
+end

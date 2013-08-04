@@ -4,11 +4,5 @@ require 'logger'
 
 $log = Logger.new(STDOUT)
 
-# TODO: load separate config file:
-ASPACE_VERSION = 'v0.6.2'
-
-class URIException < StandardError
-end
-
-
-
+require_relative '../../config/config'
+require_relative 'exceptions'
