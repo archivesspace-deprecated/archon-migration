@@ -1,4 +1,4 @@
-source :rubygems
+source 'https://rubygems.org'
 
 gem 'arel'
 gem 'atomic'
@@ -21,6 +21,7 @@ gem 'rack-protection'
 gem 'rack-test'
 gem 'rake'
 gem 'rdoc'
+gem 'rspec'
 gem 'sass'
 gem 'sdoc'
 gem 'sinatra'

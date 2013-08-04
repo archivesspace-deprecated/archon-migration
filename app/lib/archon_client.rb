@@ -103,7 +103,6 @@ module Archon
 
     def current_archon_session      
       init_session unless @session
-#      Thread.current[:archon_session]
       @session
     end
 
