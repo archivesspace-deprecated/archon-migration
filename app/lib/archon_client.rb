@@ -27,15 +27,37 @@ module Archon
 
   class ArchonRecord
 
-    # needs pagination
     def self.each
-      result_set = Thread.current[:archon_client].get_json(endpoint)
-      result_set.each {|k, v| yield k, v }
+      i = 1
+      loop do
+        result_set = Thread.current[:archon_client].get_json(endpoint(i))
+        result_set.each {|k, v| yield v }
+        break if result_set.count < 100
+        i += 100
+        raise ArchonPaginationException, "Pagination Limit Exceeded" if i > 10000
+      end
     end
 
 
-    def self.endpoint
-      "/?p=#{@p}&batch_start=1"
+    def self.endpoint(start = 1)
+      "/?p=#{@p}&batch_start=#{start}"
+    end
+
+
+    def self.all
+      all = []
+      each { |rec| all << rec }
+
+      all
+    end
+
+
+    def self.find(id)
+      each do |rec|
+        return rec if rec["ID"] == id
+      end
+      
+      return nil
     end
   end
 
@@ -51,6 +73,7 @@ module Archon
 
     def get_json(endpoint)
       uri = URI.parse("#{@url}#{endpoint}")
+      $log.debug("Prepare Archon request: #{uri.request_uri}")
 
       req = Net::HTTP::Get.new(uri.request_uri)
       response = http_request(uri, req)
