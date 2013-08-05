@@ -33,4 +33,4 @@ You will also need account credentials for each service. It is recommended that
 you created a separate account called 'migration_user' and assign this user the 
 required permissions in each application.
 
-Point your browser to http://localhost:4568 and fill out the form.
+Point your browser to, e.g.,  http://localhost:4568 and fill out the web form.

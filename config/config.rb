@@ -24,19 +24,27 @@ Appdata.parameter :aspace_version,
 									:port_number,
 					        :default_archon_url,
                   :default_archon_user,
+                  :default_archon_password,
                   :default_aspace_url,
-                  :default_aspace_user
+                  :default_aspace_user,
+                  :default_aspace_password
 
 
-Appdata.aspace_version          'v0.6.2'
+Appdata.aspace_version                  'v0.6.2'
 
-Appdata.port_number             4568
+Appdata.port_number                     4568
 
-Appdata.default_archon_url      'http://localhost/archon'
+Appdata.default_archon_url              'http://localhost/archon'
 
-Appdata.default_archon_user     'admin'
+Appdata.default_archon_user             'admin'
 
-Appdata.default_aspace_url      'http://localhost:4567'
+Appdata.default_archon_password         'admin'
 
-Appdata.default_aspace_user     'admin'
- 
+Appdata.default_aspace_url              'http://localhost:4567'
+
+Appdata.default_aspace_user             'admin'
+
+Appdata.default_aspace_password         'admin'
+
+
+
