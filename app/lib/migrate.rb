@@ -44,13 +44,16 @@ class MigrationJob
 
     #open up the batch file
     @archivesspace.import(y) do |batch|
+
+      [
+       :repository,
+       :subject
+      ].each do |key|
       
-      Archon.record_type(:subject).each do |subject|
-        $log.debug(subject)
-
-        aspace_subject = subject.class.transform(subject)
-
-        batch << aspace_subject
+        Archon.record_type(key).each do |rec|
+          $log.debug("Migrating Record: #{rec.inspect}")
+          batch << rec.class.transform(rec)
+        end
       end
     end
   end

@@ -1,8 +1,8 @@
 require 'rspec'
 require_relative '../app/lib/startup'
 require_relative '../app/lib/archon_client'
+require_relative '../app/lib/archivesspace_client'
 
-Archon.init
 
 def get_archon_client
   Archon::Client.new(

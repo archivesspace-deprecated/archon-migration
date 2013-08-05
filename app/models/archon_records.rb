@@ -1,6 +1,46 @@
 
 Archon.record_type(:repository) do
   plural 'repositories'
+  corresponding_record_type :repository_with_agent
+  
+  def self.transform(rec)
+    obj = super
+
+    repo = ASpaceImport.JSONModel(:repository).from_hash({
+                                                           :name => rec["Name"],
+                                                           :repo_code => rec["Name"],
+                                                           :org_code => rec["Code"],
+                                                           :url => rec["URL"],
+                                                         })
+
+    agent = ASpaceImport.JSONModel(:agent_corporate_entity).new
+    agent.agent_contacts = [ contact_record(rec) ]
+                                                                       
+    obj.repository = repo
+    obj.agent_representation = agent
+    obj
+  end
+
+
+	def self.contact_record(rec)
+    post_code = [rec["ZIPCode"], rec["ZIPPlusFour"]].compact.join('-')
+    telephone = [rec["Phone"], rec["PhoneExtension"]].compact.join(' ext.')
+
+    ASpaceImport.JSONModel(:agent_contact).from_hash({
+                                                       :name => rec["Name"],
+                                                       :address_1 => rec["Address"],
+                                                       :address_2 => rec["Address2"],
+                                                       :city => rec["City"],
+                                                       :region => rec["State"],
+                                                       :post_code => post_code,
+                                                       :telephone => telephone,
+                                                       :fax => rec['Fax'],
+                                                       :email => rec['Email'],
+                                                       :email_signature => rec["EmailSignature"],
+                                                       :country => rec["CountryID"]
+
+                                                     })
+	end
 end
 
 

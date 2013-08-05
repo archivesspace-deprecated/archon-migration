@@ -31,6 +31,7 @@ module Archon
       base.extend(ClassMethods)
     end
 
+
     module ClassMethods
       def p
         "core/enums"
@@ -43,7 +44,29 @@ module Archon
   end
 
 
+  module RecordSetupHelpers
+    def self.included(base)
+      base.extend(ClassMethods)
+    end
+
+
+    module ClassMethods
+      def plural(plural)
+        @plural = plural
+      end
+
+      
+      def corresponding_record_type(aspace_record_type)
+        @aspace_record_type = aspace_record_type
+      end
+        
+    end
+  end
+    
+
   class ArchonRecord
+    include RecordSetupHelpers
+
     def self.each
       i = 1
       loop do
@@ -53,11 +76,6 @@ module Archon
         i += 100
         raise ArchonPaginationException, "Pagination Limit Exceeded" if i > 10000
       end
-    end
-
-
-    def self.plural(plural)
-      @plural = plural
     end
 
 
@@ -91,7 +109,17 @@ module Archon
           return @cache[id]
         end
       end
+    end
 
+
+    def self.transform(rec)
+      if @aspace_record_type
+        obj = ASpaceImport.JSONModel(@aspace_record_type).new
+        if obj.respond_to?(:uri) && rec["ID"]
+          obj.uri = obj.class.uri_for(rec["ID"])
+        end
+        return obj
+      end
     end
 
 
