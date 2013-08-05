@@ -9,6 +9,7 @@ module Archon
   def self.record_type(key, &block)
     if block_given?
       @@record_types[key] = Class.new(ArchonRecord, &block)
+      @@record_types[key].instance_variable_set(:@key, key)
     else
       @@record_types[key]
     end
@@ -25,13 +26,29 @@ module Archon
   end
 
 
-  class ArchonRecord
+  module EnumRecord
+    def self.included(base)
+      base.extend(ClassMethods)
+    end
 
+    module ClassMethods
+      def p
+        "core/enums"
+      end
+
+      def endpoint(start = 1)
+        "/?p=#{p}&enum_type=#{@plural}&batch_start=#{start}"
+      end
+    end
+  end
+
+
+  class ArchonRecord
     def self.each
       i = 1
       loop do
         result_set = Thread.current[:archon_client].get_json(endpoint(i))
-        result_set.each {|k, v| yield v }
+        result_set.each {|k, v| yield self.new(v) }
         break if result_set.count < 100
         i += 100
         raise ArchonPaginationException, "Pagination Limit Exceeded" if i > 10000
@@ -39,8 +56,18 @@ module Archon
     end
 
 
+    def self.plural(plural)
+      @plural = plural
+    end
+
+
+    def self.p
+      "core/#{@plural}"
+    end
+
+
     def self.endpoint(start = 1)
-      "/?p=#{@p}&batch_start=#{start}"
+      "/?p=#{p}&batch_start=#{start}"
     end
 
 
@@ -53,11 +80,38 @@ module Archon
 
 
     def self.find(id)
-      each do |rec|
-        return rec if rec["ID"] == id
+      @cache ||= {}
+      if @cache.has_key?(id)
+        return @cache[id]
       end
-      
-      return nil
+
+      each do |rec|
+        if rec["ID"] == id
+          @cache[id] = rec 
+          return @cache[id]
+        end
+      end
+
+    end
+
+
+    def initialize(data)
+      @data = data
+    end
+
+
+    def [](key)
+      @data[key]
+    end
+
+    alias_method :mm_orig, :method_missing
+
+    def method_missing(method, *args)
+      if @data.has_key?(args[0])
+        @data[args.shift]
+      else
+        mm_orig(method, *args)
+      end
     end
   end
 
@@ -130,11 +184,11 @@ module Archon
   class Client
     include HTTP
 
-    def initialize(opts)
-      @url = opts[:url]
+    def initialize(opts = {})
+      @url = opts[:url] || Appdata.default_archon_url
 
-      @user = opts[:user]
-      @password = opts[:password]
+      @user = opts[:user] || Appdata.default_archon_user
+      @password = opts[:password] || Appdata.default_archon_password
 
       init_session
 
