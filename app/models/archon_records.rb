@@ -44,8 +44,16 @@ Archon.record_type(:repository) do
 end
 
 
+Archon.record_type(:group) do
+  plural 'usergroups'
+  include Archon::EnumRecord
+
+end
+
+
 Archon.record_type(:user) do
   plural 'users'
+  
 end
 
 

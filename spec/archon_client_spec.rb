@@ -30,4 +30,15 @@ describe "Archon Client" do
     s = Archon.record_type(:subject).find("2")
     s.has_key?("ID").should eq("2")
   end
+
+
+  it "can iterate over group records" do
+    ids = []
+    Archon.record_type(:group).each do |s|
+      ids << s["ID"]
+    end
+
+    ids.uniq.should eq(ids)
+    ids.count.should eq(5)
+  end
 end
