@@ -37,13 +37,13 @@ module ArchivesSpace
 
     def init_session
       $log.debug("Logging into ArchivesSpace")
-      uri = URI("#{@url}/users/#{@user}/login")
-      raise URIException, "URI format error: #{@url}" unless URI::HTTP === uri
+      url = URI("#{@url}/users/#{@user}/login")
+      raise URIException, "URI format error: #{@url}" unless URI::HTTP === url
 
-      req = Net::HTTP::Post.new(uri.request_uri)
+      req = Net::HTTP::Post.new(url.request_uri)
       req.form_data = {:password => @password}
 
-      response = JSONModel::HTTP.do_http_request(uri, req)
+      response = JSONModel::HTTP.do_http_request(url, req)
       raise "Session Init error" unless response.code == '200'
 
       json = JSON::parse(response.body)
@@ -51,6 +51,17 @@ module ArchivesSpace
 
       # for JSONModel
       Thread.current[:backend_session] = @session
+    end
+
+
+    def get_json(uri)
+      JSONModel::HTTP.get_json(uri)
+    end
+
+
+    def post_json(uri, json)
+      url = URI("#{@url}#{uri}")
+      JSONModel::HTTP.post_json(url, json)
     end
   end
 
@@ -91,12 +102,14 @@ module ArchivesSpace
                                             :dry => false,
                                             :log => $log
                                             )
+      save_map = nil
 
 
       yield cache
 
       # save the batch
       $log.debug("Posting import batch")
+      $log.debug(cache.inspect)
       cache.save! do |response|
         if response.code.to_s == '200'
 
@@ -106,6 +119,9 @@ module ArchivesSpace
                 $log.debug("Raw ASpace response: #{message.inspect}")
                 normalize_message(message) do |normaled|
                   y << json_chunk(normaled)
+                end
+                if message['saved']
+                  save_map = prepare_map(message['saved'])
                 end
               end
             rescue JSON::ParserError => e
@@ -123,6 +139,17 @@ module ArchivesSpace
                           })
         end
       end
+
+      return save_map
+    end
+
+
+    def prepare_map(save_response)
+      $log.debug("SR-Raw #{save_response}")
+
+      # Hash {Archon_id => ASpace_id}
+      Hash[save_response.map {|k,v| [k.sub(/.*\//,''), v[0]]}]
+
     end
 
 

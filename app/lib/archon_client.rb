@@ -68,6 +68,8 @@ module Archon
     include RecordSetupHelpers
 
     def self.each
+      raise NoArchonClientException unless Thread.current[:archon_client]
+
       i = 1
       loop do
         result_set = Thread.current[:archon_client].get_json(endpoint(i))

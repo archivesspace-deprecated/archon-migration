@@ -6,6 +6,15 @@ Archon.record_type(:repository) do
   def self.transform(rec)
     obj = super
 
+    agent = ASpaceImport.JSONModel(:agent_corporate_entity).new
+    agent.agent_contacts = [ contact_record(rec) ]
+    agent.names = [ ASpaceImport.JSONModel(:name_corporate_entity).from_hash({
+                                                                               :primary_name => rec["Name"],
+                                                                               :source => 'local',
+                                                                               :sort_name_auto_generate => true
+                                                                             })]
+
+
     repo = ASpaceImport.JSONModel(:repository).from_hash({
                                                            :name => rec["Name"],
                                                            :repo_code => rec["Name"],
@@ -13,12 +22,12 @@ Archon.record_type(:repository) do
                                                            :url => rec["URL"],
                                                          })
 
-    agent = ASpaceImport.JSONModel(:agent_corporate_entity).new
-    agent.agent_contacts = [ contact_record(rec) ]
+    repo.agent_representation = {:ref => agent.uri}
+    repo.uri = repo.class.uri_for(rec["ID"])
+
+    yield agent
+    yield repo
                                                                        
-    obj.repository = repo
-    obj.agent_representation = agent
-    obj
   end
 
 
@@ -53,7 +62,21 @@ end
 
 Archon.record_type(:user) do
   plural 'users'
+  corresponding_record_type :user
   
+  def self.transform(rec)
+    return nil unless (rec['IsAdminUser'] == '1')
+    obj = super
+    obj.email = rec['Email']
+    # ASpace comes with an 'admin' user out of the box
+    obj.username = rec['Login'] == 'admin' ? '_admin' : rec['Login']
+    obj.name = rec['DisplayName']
+    obj.first_name = rec["FirstName"]
+    obj.last_name = rec['LastName']
+
+    yield obj
+  end
+
 end
 
 
@@ -83,7 +106,7 @@ Archon.record_type(:subject) do
       obj.source = source["EADSource"]
     end
 
-    obj
+    yield obj
   end
 
 
