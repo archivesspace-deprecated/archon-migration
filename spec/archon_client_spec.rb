@@ -15,14 +15,19 @@ describe "Archon Client" do
   end
 
 
-  it "can iterate over subject records" do
+  def test_iterate(rec_type, count)
     ids = []
-    Archon.record_type(:subject).each do |s|
+    Archon.record_type(rec_type).each do |s|
       ids << s["ID"]
     end
 
     ids.uniq.should eq(ids)
-    ids.count.should eq(13)
+    ids.count.should eq(count)
+  end
+
+
+  it "can iterate over subject records" do
+    test_iterate(:subject, 13)
   end
 
   
@@ -33,12 +38,12 @@ describe "Archon Client" do
 
 
   it "can iterate over group records" do
-    ids = []
-    Archon.record_type(:group).each do |s|
-      ids << s["ID"]
-    end
-
-    ids.uniq.should eq(ids)
-    ids.count.should eq(5)
+    test_iterate(:group, 5)
   end
+
+
+  it "can iterate over user records" do
+    test_iterate(:user, 4)
+  end
+
 end
