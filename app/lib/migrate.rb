@@ -74,25 +74,25 @@ class MigrationJob
 
         my_repos.each do |archon_id, aspace_uri|
           all_groups = @archivesspace.get_json("#{aspace_uri}/groups")
-          rec["Usergroups"].each do |old_group_id|
-            group_codes = case old_group_id
-                         when "1"
-                           %w(repository-managers repository-project-managers)
-                         when "2"
-                           %w(repository-advanced-data-entry)
-                         when "3"
-                           %w(repository-basic-data-entry)
-                         when "4"
-                           %w(repository-viewers)
-                         end
-            group_codes.each do |gc|
-              my_groups << all_groups.find{|g| g['group_code'] == gc}['uri']
-            end
+          # take the lowest group ID
+          old_group_id = rec["Usergroups"].sort.first
+          group_codes = case old_group_id
+                        when "1"
+                          %w(repository-managers repository-project-managers)
+                        when "2"
+                          %w(repository-advanced-data-entry)
+                        when "3"
+                          %w(repository-basic-data-entry)
+                        when "4"
+                          %w(repository-viewers)
+                        end
+          group_codes.each do |gc|
+            my_groups << all_groups.find{|g| g['group_code'] == gc}['uri']
           end
         end
 
         obj.uri = nil
-        result = obj.save(:password => "password", "groups[]" => my_groups.flatten)
+        result = obj.save(:password => "password", "groups[]" => my_groups)
         
         $log.debug("Save User result: #{result}")
       end
