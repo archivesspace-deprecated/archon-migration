@@ -25,6 +25,7 @@ class MigrationJob
                                  :user => @args[:archon_user],
                                  :password => @args[:archon_password]
                                  )
+    @unmigrated_records = {}
 
   end
 
@@ -36,9 +37,6 @@ class MigrationJob
       $log.warn("Not connected")
     end
   end
-
-
-  
 
 
   def migrate(y)

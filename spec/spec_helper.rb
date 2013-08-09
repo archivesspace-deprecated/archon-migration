@@ -12,3 +12,23 @@ def get_archon_client
                      )
 
 end
+
+
+class MockEnumSource
+  def self.valid?(enum_name, value)
+    [true, false].sample
+  end
+
+  def self.values_for(enum_name)
+    %w{alpha beta epsilon}
+  end
+end
+
+
+class MockArchivesSpaceClient
+  attr_reader :enum_source
+
+  def initialize
+    @enum_source = MockEnumSource
+  end
+end
