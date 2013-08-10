@@ -25,7 +25,11 @@ describe "Archon record mappings" do
     rec = Archon.record_type(type).new(data)
     results = transform(rec.class, data)
 
-    return rec, results
+    if block_given?
+      yield rec, results
+    else
+      return rec, results
+    end
   end
 
 
@@ -156,6 +160,95 @@ describe "Archon record mappings" do
 
     it "maps 'CountryID' to 'repository_with_agent.agent_representation.agent_contacts[0].country" do
       @agent['agent_contacts'][0]['country'].should eq(@rec["CountryID"])
+    end
+  end
+
+
+
+  describe "Agents" do 
+    before(:all) do 
+      @archon = get_archon_client
+      pending "Needs an Archon connection" unless @archon
+    end
+
+    def with(hash = {})
+      create_test_set(
+                      :creator,
+                      text_fields,
+                      template.merge(hash)
+                      ) do |rec, set|
+        yield rec, set
+      end
+    end
+
+
+    let (:text_fields) { %w(ID Name NameFullerForm NameVariants Bioghist BioghistAuthor Sources Dates) }
+    let (:template) { {
+        'CreatorSourceID' => '1',
+        'CreatorTypeID' => '19',
+        'Identifier' => '1',
+        'CreatorRelationships' => [{"2" => "7"}, {"3" => "3"}],
+        'RepositoryID' => '1'
+      } }
+    let (:type_id) {'CreatorTypeID'}
+
+
+    it "maps 'Name' to primary_name or family_name" do
+      %w(19 22).each do |code|
+        with({type_id => code}) do |rec, set|
+          set.first.names[0]['primary_name'].should eq(rec['Name'])
+        end
+      end
+      
+      with({type_id => '20'}) do |rec, set|
+        set.first.names[0]['family_name'].should eq(rec['Name'])
+      end
+    end
+
+
+    it "maps 'NameFullerForm' to agent_person.names[0].fuller_form" do
+      with({type_id => '19'}) do |rec, set|
+        set.first.names[0]['fuller_form'].should eq(rec['NameFullerForm'])
+      end
+    end
+
+
+    it "maps 'NameVariants' to agent_person.names[1].primary_name" do
+      with({type_id => '19'}) do |rec, set|
+        set.first.names[1]['primary_name'].should eq(rec['NameVariants'])
+      end
+    end
+
+
+    it "uses the 'CreatorSource' lookup list to set agent_person.names[].source" do
+      with({'CreatorSourceID' => '3'}) do |rec, set|
+        (0..1).each do |i|
+          set.first.names[i]['source'].should eq('CreSrcAbbr')
+        end
+      end
+    end
+
+
+    it "makes an agent_person for type ID 19, 21 and 23" do
+      %w(19 21 23).each do |code|
+        with({type_id => code}) do |rec, set|
+          set.first.jsonmodel_type.should eq('agent_person')
+        end
+      end
+    end
+
+
+    it "makes an agent_family for type ID 20" do
+      with({type_id => '20'}) do |rec, set|
+        set.first.jsonmodel_type.should eq('agent_family')
+      end
+    end
+
+    
+    it "makes an agent_corporate_entity for type ID 22" do
+      with({type_id => '22'}) do |rec, set|
+        set.first.jsonmodel_type.should eq('agent_corporate_entity')
+      end
     end
   end
 end
