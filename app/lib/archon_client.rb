@@ -114,6 +114,16 @@ module Archon
     end
 
 
+    def self.model(type, data = nil)
+      model = ASpaceImport.JSONModel(type)
+      if data
+        model.from_hash(data)
+      else
+        model
+      end
+    end
+
+
     def self.transform(rec)
       if @aspace_record_type
         obj = ASpaceImport.JSONModel(@aspace_record_type).new
@@ -122,6 +132,12 @@ module Archon
         end
         return obj
       end
+    end
+
+
+    def self.unspecified(value)
+      $log.warn("Using unspecified value: #{value}")
+      value
     end
 
 
