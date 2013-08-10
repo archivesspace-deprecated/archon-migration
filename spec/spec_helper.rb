@@ -5,11 +5,15 @@ require_relative '../app/lib/archivesspace_client'
 
 
 def get_archon_client
-  Archon::Client.new(
-                     :url => Appdata.default_archon_url,
-                     :user => Appdata.default_archon_user,
-                     :password => 'admin'
-                     )
+  begin
+    Archon::Client.new(
+                       :url => Appdata.default_archon_url,
+                       :user => Appdata.default_archon_user,
+                       :password => 'admin'
+                       )
+  rescue Archon::ArchonAuthenticationError
+    nil
+  end
 
 end
 
