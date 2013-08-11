@@ -164,8 +164,7 @@ describe "Archon record mappings" do
   end
 
 
-
-  describe "Agents" do 
+  describe "Creator record" do 
     before(:all) do 
       @archon = get_archon_client
       pending "Needs an Archon connection" unless @archon
@@ -182,12 +181,11 @@ describe "Archon record mappings" do
     end
 
 
-    let (:text_fields) { %w(ID Name NameFullerForm NameVariants Bioghist BioghistAuthor Sources Dates) }
+    let (:text_fields) { %w(ID Name NameFullerForm NameVariants Identifier Bioghist BioghistAuthor Sources Dates) }
     let (:template) { {
         'CreatorSourceID' => '1',
         'CreatorTypeID' => '19',
-        'Identifier' => '1',
-        'CreatorRelationships' => [{"2" => "7"}, {"3" => "3"}],
+        'CreatorRelationships' => [],
         'RepositoryID' => '1'
       } }
     let (:type_id) {'CreatorTypeID'}
@@ -250,5 +248,65 @@ describe "Archon record mappings" do
         set.first.jsonmodel_type.should eq('agent_corporate_entity')
       end
     end
+
+
+    it "maps 'Identifier' to 'agent.names[0].authority_id'" do
+      with do |rec, set|
+        set.first.names[0]['authority_id'].should eq(rec['Identifier'])
+      end
+    end
+
+
+    it "maps 'Dates' to 'agent.dates_of_existece[0].expression'" do
+      with do |rec, set|
+        set.first.dates_of_existence[0]['expression'].should eq(rec['Dates'])
+      end
+    end
+
+
+    it "maps 'Bioghist' to the first 'note_text' subnote of the first 'note_bioghist'" do
+      with do |rec, set|
+        notes = get_subnotes_by_type(set.first.notes[0], 'note_text')
+        notes[0]['content'].should eq(rec['Bioghist'])
+      end
+    end
+
+
+    it "maps 'BioghistAuthor' to the first 'note_citation' subnote of the first 'note_bioghist'" do
+      with do |rec, set|
+        notes = get_subnotes_by_type(set.first.notes[0], 'note_citation')
+        notes[0]['content'][0].should eq("Author: #{rec['BioghistAuthor']}")
+      end
+    end
+
+
+    it "maps 'Sources' to either the second 'note_citation' or the first 'note_abstract' subnote" do
+      with({type_id => '19'}) do |rec, set|
+        notes = get_subnotes_by_type(set.first.notes[0], 'note_citation')
+        notes[1]['content'][0].should eq(rec['Sources'])
+      end
+
+      #corporate_entity
+      with({type_id => '22'}) do |rec, set|
+        notes = get_subnotes_by_type(set.first.notes[0], 'note_abstract')
+        notes[0]['content'][0].should eq(rec['Sources'])
+      end
+    end
+
+
+    it "migrates Creator relationships" do
+      with({
+             type_id => '19', 
+             'CreatorRelationships' => [
+                                        {'4' => '2'}, 
+                                        #{'2' => '5'} TODO after spec clarification
+                                       ]
+           }) do |rec, set|
+        related_agents = set.first.related_agents
+        related_agents[0]['relator'].should eq('is_parent_of')
+        related_agents[0]['ref'].should eq('/agents/people/4')
+      end
+    end
+    
   end
 end

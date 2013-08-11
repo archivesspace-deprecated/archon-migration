@@ -14,7 +14,11 @@ def get_archon_client
   rescue Archon::ArchonAuthenticationError
     nil
   end
+end
 
+
+def get_subnotes_by_type(obj, note_type)
+  obj['subnotes'].select {|sn| sn['jsonmodel_type'] == note_type}
 end
 
 
