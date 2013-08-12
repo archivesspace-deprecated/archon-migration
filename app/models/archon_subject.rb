@@ -2,23 +2,25 @@ Archon.record_type(:subject) do
   self.plural 'subjects'
 
   def self.transform(rec)
-    # build an agent
-    if %w(3 8 10).include?(rec["SubjectTypeID"])
-      return
-    # build a subject
+    if %w(3 8 10).include?(rec["SubjectTypeID"]) && rec['Parent'].nil?
+      obj = transform_to_agent(rec)
     else
       terms = build_terms(rec)
-      source = Archon.record_type(:subjectsource).find(rec["SubjectSourceID"])
-
       obj = model(:subject).new
       obj.class.uri_for(rec["ID"])
       obj.terms = terms
       obj.external_ids = [{:external_id => rec["ID"], :source => "Archon"}]
       obj.vocabulary = '/vocabularies/1'
-      obj.source = source["EADSource"]
+      obj.source = get_source(rec["SubjectSourceID"])
     end
 
     yield obj
+  end
+
+
+  def self.get_source(id)
+    rec = Archon.record_type(:subjectsource).find(id)
+    rec['EADSource']
   end
 
 
@@ -45,4 +47,38 @@ Archon.record_type(:subject) do
     else; 'topical'
     end
   end
+
+
+  def self.transform_to_agent(rec)
+    case rec['SubjectTypeID']
+    when '3'
+      obj = model(:agent_corporate_entity).new
+      obj.names << model(:name_corporate_entity,
+                         name_template(rec).merge({
+                                                    :primary_name => rec['Subject'],
+                                                  }))
+                         
+    when '8'
+      obj = model(:agent_person).new
+      obj.names << model(:name_person,
+                         name_template(rec).merge({
+                                                    :primary_name => rec['Subject'],
+                                                  }))
+    when '10'
+      obj = model(:agent_family).new
+      obj.names << model(:name_family,
+                         name_template(rec).merge({
+                                                   :family_name => rec['Subject'],
+                                                 }))
+    end
+    
+    obj
+  end
+
+
+  def self.name_template(rec)
+    hsh = super
+    hsh.merge({:source => get_source(rec['SubjectSourceID'])})
+  end
+    
 end

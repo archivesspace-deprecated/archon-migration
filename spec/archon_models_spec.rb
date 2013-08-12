@@ -309,4 +309,45 @@ describe "Archon record mappings" do
     end
     
   end
+
+
+  describe "Subject record" do 
+    before(:all) do 
+      @archon = get_archon_client
+      pending "Needs an Archon connection" unless @archon
+    end
+
+    def with(hash = {})
+      create_test_set(
+                      :subject,
+                      text_fields,
+                      template.merge(hash)
+                      ) do |rec, set|
+        yield rec, set
+      end
+    end
+
+
+    let (:text_fields) { %w(Subject Identifier Description) }
+    let (:template) { {
+        'ID' => '1',
+        'SubjectTypeID' => '1',
+        'SubjectSourceID' => '2',
+        'Parent' => nil,
+        'ParentID' => '0'
+      } }
+    let (:type_id) {'SubjectTypeID'}
+
+    it "creates an agent_person for subjects with type 8 unless the subject has a parent" do
+      with(type_id => '8') do |rec, set|
+        set.first.jsonmodel_type.should eq('agent_person')
+      end
+      
+      parent_data = create_test_hash(text_fields, template)
+
+      with({type_id => '8', 'Parent' => parent_data}) do |rec, set|
+        set.first.jsonmodel_type.should eq('subject')
+      end
+    end
+  end
 end
