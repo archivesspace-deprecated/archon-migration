@@ -20,7 +20,7 @@ Archon.record_type(:subject) do
 
   def self.get_source(id)
     rec = Archon.record_type(:subjectsource).find(id)
-    rec['EADSource']
+    rec ? rec['EADSource'] : unspecified('local')
   end
 
 
