@@ -80,14 +80,8 @@ Archon.record_type(:creator) do
 
  
   def self.name_template(rec)
-    name_source = get_source(rec['CreatorSourceID'])
-    {
-      :name_order => unspecified('direct'),
-      :source => unspecified('local'),
-      :sort_name_auto_generate => true,
-      :source => name_source,
-      :authority_id => rec['Identifier']
-    }
+    hsh = super
+    hsh.merge({:source => get_source(rec['CreatorSourceID'])})
   end
 
 

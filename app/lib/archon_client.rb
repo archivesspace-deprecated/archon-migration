@@ -141,6 +141,15 @@ module Archon
     end
 
 
+    def self.name_template(rec)
+    {
+      :name_order => unspecified('direct'),
+      :sort_name_auto_generate => true,
+      :authority_id => rec['Identifier']
+    }
+    end
+
+
     def initialize(data)
       @data = data
     end
