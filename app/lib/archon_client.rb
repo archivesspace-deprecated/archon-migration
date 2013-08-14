@@ -33,12 +33,12 @@ module Archon
 
 
     module ClassMethods
-      def p
+      def path
         "core/enums"
       end
 
       def endpoint(start = 1)
-        "/?p=#{p}&enum_type=#{@plural}&batch_start=#{start}"
+        "/?p=#{path}&enum_type=#{@plural}&batch_start=#{start}"
       end
     end
   end
@@ -81,13 +81,13 @@ module Archon
     end
 
 
-    def self.p
+    def self.path
       "core/#{@plural}"
     end
 
 
     def self.endpoint(start = 1)
-      "/?p=#{p}&batch_start=#{start}"
+      "/?p=#{path}&batch_start=#{start}"
     end
 
 
