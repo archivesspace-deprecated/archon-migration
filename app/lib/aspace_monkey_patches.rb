@@ -1,21 +1,4 @@
 # Monkey patches for dismembered ArchivesSpace client tools
-
-# don't run this code more than once
-raise "bad reload" if defined?(ArchivesSpacePatches)
-
-Kernel.module_eval do
-  alias_method :orig_require, :require
-
-  def require(*args)
-    if args[0] =~ /(config-distribution|java)$/
-      $log.debug("Skipping require: #{e}")
-    else
-      orig_require(*args) unless args[0] 
-    end
-  end
-end
-
-
 module AppConfig
   def self.[](*args)
     []
@@ -25,7 +8,25 @@ end
 
 module ArchivesSpacePatches
 
-  def self.patch
+  def self.patch_in(&block)
+    Kernel.module_eval do
+      alias_method :orig_require, :require
+
+      def require(*args)
+        if args[0] =~ /(config-distribution|java)$/
+          $log.debug("Skipping require: #{args[0]}")
+        else
+          orig_require(*args)
+        end
+      end
+    end
+
+    block.call
+
+    Kernel.module_eval do
+      alias_method :require, :orig_require
+    end
+
     ASUtils.module_eval do
       def self.find_local_directories(*args)
         nil

@@ -4,18 +4,26 @@ require 'json-schema'
 require_relative 'aspace_monkey_patches'
 
 module ArchivesSpace
+  @@initialized ||= false
 
   def self.init
+    $log.warn("Already initiaized ArchivesSpace") if @@initialized
     $:.unshift File.dirname(File.absolute_path(__FILE__)) + "/../../vendor/archivesspace/client_tools/#{Appdata.aspace_version}/"
 
-    require 'common/jsonmodel'
-    require 'common/jsonmodel_client'
-    require 'migrations/lib/parse_queue'
-    require 'migrations/lib/jsonmodel_wrap'
-    require 'migrations/lib/utils'
-    ArchivesSpacePatches.patch
-
+    ArchivesSpacePatches.patch_in do 
+      require 'common/jsonmodel'
+      require 'common/jsonmodel_client'
+      require 'migrations/lib/parse_queue'
+      require 'migrations/lib/jsonmodel_wrap'
+      require 'migrations/lib/utils'
+    end
     JSONModel.init(:client_mode => false, :enum_source => nil)
+    @@initialized = true
+  end
+
+
+  def self.initialized?
+    @@initialized
   end
 
 
@@ -193,4 +201,4 @@ module ArchivesSpace
   end
 end
 
-ArchivesSpace.init
+ArchivesSpace.init unless ArchivesSpace.initialized?
