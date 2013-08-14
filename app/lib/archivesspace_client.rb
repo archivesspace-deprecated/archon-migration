@@ -1,33 +1,19 @@
 require_relative 'startup'
 gem 'json-schema', '= 1.0.10'
 require 'json-schema'
+require_relative 'aspace_monkey_patches'
 
 module ArchivesSpace
 
-
   def self.init
-
     $:.unshift File.dirname(File.absolute_path(__FILE__)) + "/../../vendor/archivesspace/client_tools/#{Appdata.aspace_version}/"
-
-    Kernel.module_eval do
-      alias_method :orig_require, :require
-      
-      def require(*args)
-        begin 
-          orig_require(*args)
-        rescue LoadError => e
-          $log.debug("Load Error Caught: #{e}")
-          raise e unless e.to_s =~ /(config-distribution|java)$/
-        end
-      end
-    end
 
     require 'common/jsonmodel'
     require 'common/jsonmodel_client'
     require 'migrations/lib/parse_queue'
     require 'migrations/lib/jsonmodel_wrap'
     require 'migrations/lib/utils'
-    require_relative 'aspace_monkey_patches'
+    ArchivesSpacePatches.patch
 
     JSONModel.init(:client_mode => false, :enum_source => nil)
   end
