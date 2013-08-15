@@ -84,6 +84,11 @@ end
 # /?p=core/classifications&batch_start=1
 # ?p=core/collections&batch_start=1
 # ?p=core/accessions&batch_start=1
+Archon.record_type(:accession) do
+  plural 'accessions'
+end
+
+
 # ?p=core/content&cid=integer&batch_start=1
 # ?p=core/digitalcontent&batch_start=1
 # ?p=core/digitalfiles&batch_start=1

@@ -90,6 +90,12 @@ module ArchivesSpace
     end
 
 
+    def repo(id)
+      JSONModel.set_repository(id)
+      self
+    end
+
+
     def import(y)
       reader = ResponseReader.new
       cache = ASpaceImport::ImportCache.new(
@@ -100,6 +106,13 @@ module ArchivesSpace
 
 
       yield cache
+
+      # don't bother with empty sets:
+      # (another workaround of aspace migration tools,
+      # this is the only way to confirm the set is empty)
+      internal_batch = cache.instance_variable_get(:@batch)
+      seen_records = internal_batch.instance_variable_get(:@seen_records)
+      return {} if cache.empty? && seen_records.empty?
 
       # save the batch
       $log.debug("Posting import batch")

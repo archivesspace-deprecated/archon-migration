@@ -73,7 +73,13 @@ module Archon
       i = 1
       loop do
         result_set = Thread.current[:archon_client].get_json(endpoint(i))
-        result_set.each {|k, v| yield self.new(v) }
+        if result_set.is_a?(Array)
+          result_set.each {|rec| yield self.new(rec)}
+        elsif result_set.is_a?(Hash)
+          result_set.each {|i, rec| yield self.new(rec) }
+        else
+          raise "Unintelligble data structure #{result_set.inspect}"
+        end
         break if result_set.count < 100
         i += 100
         raise ArchonPaginationException, "Pagination Limit Exceeded" if i > 10000
@@ -190,9 +196,27 @@ module Archon
       if response.code != '200'
         raise "ERROR Getting JSON #{response.inspect}"
       else
-        json = JSON.parse(response.body)
+        begin
+          json = JSON.parse(response.body)
+          json
+        rescue JSON::ParserError
+          raise "Archon response is not JSON!"
+        end
+      end
+    end
 
-        json
+
+    def get_bitstream(endpoint)
+      uri = URI.parse("#{@url}#{endpoint}")
+      $log.debug("Prepare Archon request: #{uri.request_uri}")
+
+      req = Net::HTTP::Get.new(uri.request_uri)
+      response = http_request(uri, req)
+      $log.debug("Raw Archon response: #{response.inspect}")
+      if response.code != '200'
+        raise "ERROR Getting bitstream #{response.inspect}"
+      else
+        response.body
       end
     end
 

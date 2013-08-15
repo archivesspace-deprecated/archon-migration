@@ -58,7 +58,7 @@ class MigrationJob
       end
     end
 
-    repo_map = save_map.select{|k, v| v =~ /repositories/}
+    @repo_map = save_map.select{|k, v| v =~ /repositories/}
 
     # 2: Users (must use dedicated controller)
     Archon.record_type(:user).each do |rec|
@@ -70,7 +70,7 @@ class MigrationJob
           my_groups << "/repositories/1/groups/1"
         end        
 
-        my_repos = rec["RepositoryLimit"] == "1" ? repo_map.reject{|k,v| rec!["Repositories"].include?(k)} : repo_map
+        my_repos = rec["RepositoryLimit"] == "1" ? @repo_map.reject{|k,v| rec!["Repositories"].include?(k)} : @repo_map
 
         my_repos.each do |archon_id, aspace_uri|
           all_groups = @archivesspace.get_json("#{aspace_uri}/groups")
@@ -98,14 +98,29 @@ class MigrationJob
       end
     end
 
-    # 3: Everything else
+    # 3: Global scope objects
     @archivesspace.import(y) do |batch|
       [
-       :subject
+#       :subject,
+#       :creator
       ].each do |key|
       
         Archon.record_type(key).each do |rec|
           $log.debug("Migrating Record: #{rec.inspect}")
+          rec.class.transform(rec) do |obj|
+            batch << obj
+          end
+        end
+      end
+    end
+
+    # Iterate through repositories
+    @repo_map.each do |archon_repo_id, aspace_repo_uri|
+      repo_id = aspace_repo_uri.sub(/.*\//,'')
+      $log.debug("Importing content for repository #{repo_id}")
+
+      @archivesspace.repo(repo_id).import(y) do |batch|
+        Archon.record_type(:classification).each do |rec|
           rec.class.transform(rec) do |obj|
             batch << obj
           end

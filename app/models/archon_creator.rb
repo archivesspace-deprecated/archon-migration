@@ -44,17 +44,17 @@ Archon.record_type(:creator) do
     end
 
     note = model(:note_bioghist).new
-    unless rec['Bioghist'].empty?
+    unless rec['BiogHist'].empty?
       note.subnotes << model(:note_text, 
                              {
-                               :content => rec['Bioghist']
+                               :content => rec['BiogHist']
                              })
     end
 
-    unless rec['BioghistAuthor'].empty?
+    unless rec['BiogHistAuthor'].empty?
       note.subnotes << model(:note_citation,
                              {
-                               :content => ["Author: #{rec['BioghistAuthor']}"]
+                               :content => ["Author: #{rec['BiogHistAuthor']}"]
                              })
     end
 

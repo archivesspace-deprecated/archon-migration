@@ -2,9 +2,9 @@ require_relative 'spec_helper'
 
 describe "Archon Client" do
   before(:all) do 
-    client = get_archon_client
-    if client
-      repo = client.get_json('/?p=core/repositories&batch_start=1')
+    @client = get_archon_client
+    if @client
+      repo = @client.get_json('/?p=core/repositories&batch_start=1')
       unless repo['1']['Name'] == "Archon Migration Tracer"
         pending "an Archon instance running against the archon_tracer database"
       end
@@ -38,5 +38,24 @@ describe "Archon Client" do
 
   it "can iterate over user records" do
     test_iterate(:user, 4)
+  end
+
+
+  it "(Archon, that is) can give us a digital object batch" do
+    @client.get_json('/?p=core/digitalobjects&batch_start=1').should_not raise_error
+  end
+
+  # it "can iterate over digital object records" do
+  #   test_iterate(:digitalobject, 1)
+  # end
+
+  it "can iterate over digital file records" do
+    test_iterate(:digitalfile, 1)
+  end
+
+  it "can fetch a digital file bitstream" do
+    df = Archon.record_type(:digitalfile)
+    bitstream = @client.get_bitstream('/?p=core/digitalfileblob&fileid=1')
+    bitstream[0,4].should eq("\xff\xd8\xff\xe0")
   end
 end
