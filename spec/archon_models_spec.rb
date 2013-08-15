@@ -181,7 +181,7 @@ describe "Archon record mappings" do
     end
 
 
-    let (:text_fields) { %w(ID Name NameFullerForm NameVariants Identifier Bioghist BioghistAuthor Sources Dates) }
+    let (:text_fields) { %w(ID Name NameFullerForm NameVariants Identifier BiogHist BiogHistAuthor Sources Dates) }
     let (:template) { {
         'CreatorSourceID' => '1',
         'CreatorTypeID' => '19',
@@ -264,18 +264,18 @@ describe "Archon record mappings" do
     end
 
 
-    it "maps 'Bioghist' to the first 'note_text' subnote of the first 'note_bioghist'" do
+    it "maps 'BiogHist' to the first 'note_text' subnote of the first 'note_bioghist'" do
       with do |rec, set|
         notes = get_subnotes_by_type(set.first.notes[0], 'note_text')
-        notes[0]['content'].should eq(rec['Bioghist'])
+        notes[0]['content'].should eq(rec['BiogHist'])
       end
     end
 
 
-    it "maps 'BioghistAuthor' to the first 'note_citation' subnote of the first 'note_bioghist'" do
+    it "maps 'BiogHistAuthor' to the first 'note_citation' subnote of the first 'note_bioghist'" do
       with do |rec, set|
         notes = get_subnotes_by_type(set.first.notes[0], 'note_citation')
-        notes[0]['content'][0].should eq("Author: #{rec['BioghistAuthor']}")
+        notes[0]['content'][0].should eq("Author: #{rec['BiogHistAuthor']}")
       end
     end
 
@@ -347,6 +347,69 @@ describe "Archon record mappings" do
 
       with({type_id => '8', 'Parent' => parent_data}) do |rec, set|
         set.first.jsonmodel_type.should eq('subject')
+      end
+    end
+  end
+
+
+  describe "Classification record" do 
+    before(:all) do 
+      @archon = get_archon_client
+      pending "Needs an Archon connection" unless @archon
+
+      JSONModel.set_repository(1)
+    end
+
+    def with(hash = {})
+      create_test_set(
+                      :classification,
+                      text_fields,
+                      template.merge(hash)
+                      ) do |rec, set|
+        yield rec, set
+      end
+    end
+
+
+    let (:text_fields) { %w(ClassificationIdentifier Title Description) }
+    let (:template) { {
+        'ID' => '2',
+        'ParentID' => '0',
+        'CreatorID' => '0',
+      } }
+
+
+    it "creates a 'classification' if 'ParentID' is '0'; otherwise 'classification_term'" do
+      with('ParentID' => '0') do |rec, set|
+        set.first.jsonmodel_type.should eq('classification')
+      end
+      
+      with('ParentID' => '1') do |rec, set|
+        set.first.jsonmodel_type.should eq('classification_term')
+      end
+    end
+
+
+    it "doesn't create a parent for a top-level term" do
+      with('ParentID' => '1') do |rec, set|
+        set.first.parent.should be_nil
+      end
+
+      with('ParentID' => '3') do |rec, set|
+        set.first.parent.should_not be_nil
+      end
+    end
+    
+
+    it "maps 'ClassificationIdentifier' to classification.identifier" do
+      with do |rec, set|
+        set.first.identifier.should eq(rec['ClassificationIdentifier'])
+      end
+    end
+
+    it "maps 'Title' to 'classification(_term)?.title'" do
+      with do |rec, set|
+        set.first.title.should eq(rec['Title'])
       end
     end
   end
