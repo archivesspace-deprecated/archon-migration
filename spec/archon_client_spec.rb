@@ -41,17 +41,15 @@ describe "Archon Client" do
   end
 
 
-  it "(Archon, that is) can give us a digital object batch" do
-    @client.get_json('/?p=core/digitalobjects&batch_start=1').should_not raise_error
+  it "can iterate over digital object records" do
+    test_iterate(:digitalcontent, 1)
   end
 
-  # it "can iterate over digital object records" do
-  #   test_iterate(:digitalobject, 1)
-  # end
 
   it "can iterate over digital file records" do
     test_iterate(:digitalfile, 1)
   end
+
 
   it "can fetch a digital file bitstream" do
     df = Archon.record_type(:digitalfile)
