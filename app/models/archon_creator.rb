@@ -1,5 +1,5 @@
 Archon.record_type(:creator) do
-  self.plural 'creators'
+  plural 'creators'
 
   def self.transform(rec)
 
