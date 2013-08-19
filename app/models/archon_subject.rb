@@ -7,13 +7,13 @@ Archon.record_type(:subject) do
     else
       terms = build_terms(rec)
       obj = model(:subject).new
-      obj.class.uri_for(rec["ID"])
       obj.terms = terms
       obj.external_ids = [{:external_id => rec["ID"], :source => "Archon"}]
       obj.vocabulary = '/vocabularies/1'
       obj.source = get_source(rec["SubjectSourceID"])
     end
 
+    obj.uri = obj.class.uri_for(rec.import_id)
     yield obj
   end
 

@@ -5,8 +5,16 @@ require_relative 'archivesspace_client'
 
 class MigrationJob
 
-  def initialize(params)
+  def initialize(params = {})
     @args = params
+
+    @args[:archon_url] ||= Appdata.default_archon_url
+    @args[:archon_user] ||= Appdata.default_archon_user
+    @args[:archon_password] ||= Appdata.default_archon_password
+
+    @args[:aspace_url] ||= Appdata.default_aspace_url
+    @args[:aspace_user] ||= Appdata.default_aspace_user
+    @args[:aspace_password] ||= Appdata.default_aspace_password
 
     # 1 job per thread
     raise "Job thread occupied." if Thread.current[:archon_migration_job]
@@ -99,10 +107,10 @@ class MigrationJob
     end
 
     # 3: Global scope objects
-    @archivesspace.import(y) do |batch|
+    @import_map = @archivesspace.import(y) do |batch|
       [
-#       :subject,
-#       :creator
+       :subject,
+       :creator
       ].each do |key|
       
         Archon.record_type(key).each do |rec|
@@ -122,6 +130,40 @@ class MigrationJob
       @archivesspace.repo(repo_id).import(y) do |batch|
         Archon.record_type(:classification).each do |rec|
           rec.class.transform(rec) do |obj|
+            # set the creator (can't do this now; aspace issue
+            # creator_uri = @import_map[rec.import_id]
+            # obj.creator = {'ref' => creator_uri}
+            batch << obj
+          end
+        end
+
+        Archon.record_type(:collection).each do |rec|
+          next unless rec['RepositoryID'] == archon_repo_id
+          rec.class.transform(rec) do |obj|
+
+            rec['Creators'].each do |id|
+              import_id = Archon.record_type(:creator).import_id_for(id)
+              obj.linked_agents << {
+                :ref => @import_map[import_id],
+                :role => 'creator'
+              }
+            end
+
+            rec['Subjects'].each do |id|
+              import_id = Archon.record_type(:subject).import_id_for(id)
+              agent_or_subject_ref = @import_map[import_id]
+              if agent_or_subject_ref =~ /agents/
+                obj.linked_agents << {
+                  :ref => agent_or_subject_ref,
+                  :role => 'subject'
+                }
+              else 
+                obj.subjects << {
+                  :ref => @import_map[import_id]
+                }
+              end
+            end
+
             batch << obj
           end
         end

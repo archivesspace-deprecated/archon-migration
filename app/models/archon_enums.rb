@@ -10,4 +10,3 @@
     include  Archon::EnumRecord
   end
 end
-

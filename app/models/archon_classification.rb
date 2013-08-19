@@ -4,21 +4,19 @@ Archon.record_type(:classification) do
 
   def self.transform(rec)
 
-    json_type = rec['ParentID'] == '0' ? :classification : :classification_term
-
     data = {
       :identifier => rec['ClassificationIdentifier'],
       :title => rec['Title']
     }
 
-    unless rec['ParentID'] == '0'
+    if rec.aspace_type == :classification_term
       classification_uri, parent_uri = walk_ancestry(rec)
 
       data.merge!({:classification => {:ref => classification_uri}})
       data.merge!({:parent => {:ref => parent_uri}}) if parent_uri
     end
 
-    obj = model(json_type, data)
+    obj = model(rec.aspace_type, data)
     obj.uri = obj.class.uri_for(rec['ID'])
 
     yield obj if block_given? 
@@ -42,4 +40,21 @@ Archon.record_type(:classification) do
       walk_ancestry(parent, parent_term_uri, i)
     end
   end
+
+
+  def resource_identifiers(ids=nil)
+    ids = [] unless ids
+    ids.unshift(self['ClassificationIdentifier'])
+    if self['ParentID'] == '0'
+      return ids
+    else
+      self.class.find(self['ParentID']).resource_identifiers(ids)
+    end
+  end
+
+
+  def aspace_type
+    self['ParentID'] == '0' ? :classification : :classification_term
+  end
+
 end

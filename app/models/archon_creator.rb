@@ -11,7 +11,7 @@ Archon.record_type(:creator) do
                                                     :primary_name => rec['Name'],
                                                     :fuller_form => rec['NameFullerForm'],
                                              }))
-      unless rec['NameVariants'].empty?
+      if rec['NameVariants']
         obj.names << model(:name_person,
                            name_template(rec).merge({
                                                       :primary_name => rec['NameVariants'],
@@ -34,7 +34,7 @@ Archon.record_type(:creator) do
                                                   }))
     end
 
-    unless rec['Dates'].empty?
+    if rec['Dates']
       obj.dates_of_existence << model(:date,
                                       {
                                         :expression => rec['Dates'],
@@ -43,22 +43,24 @@ Archon.record_type(:creator) do
                                       })
     end
 
+    obj.uri = obj.class.uri_for(rec.import_id)
+
     note = model(:note_bioghist).new
-    unless rec['BiogHist'].empty?
+    if rec['BiogHist']
       note.subnotes << model(:note_text, 
                              {
                                :content => rec['BiogHist']
                              })
     end
 
-    unless rec['BiogHistAuthor'].empty?
+    if rec['BiogHistAuthor']
       note.subnotes << model(:note_citation,
                              {
                                :content => ["Author: #{rec['BiogHistAuthor']}"]
                              })
     end
 
-    unless rec['Sources'].empty?
+    if rec['Sources']
       sntype = obj.jsonmodel_type =~ /corporate/ ? :note_abstract : :note_citation
       note.subnotes << model(sntype,
                              {

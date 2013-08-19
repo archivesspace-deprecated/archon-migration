@@ -1,6 +1,15 @@
+# -*- coding: utf-8 -*-
 require_relative 'spec_helper'
 
 describe "Archon record mappings" do
+
+  before(:all) do 
+    @archon = get_archon_client
+    pending "Needs an Archon connection" unless @archon
+
+    JSONModel.set_repository(1)
+  end
+
 
   def create_test_hash(fields, template = {})
     data = Hash[fields.map{ |field| [field, rand(36**4).to_s(36)] }]
@@ -166,8 +175,7 @@ describe "Archon record mappings" do
 
   describe "Creator record" do 
     before(:all) do 
-      @archon = get_archon_client
-      pending "Needs an Archon connection" unless @archon
+      verify_archon_dataset(@client)
     end
 
     def with(hash = {})
@@ -312,10 +320,6 @@ describe "Archon record mappings" do
 
 
   describe "Subject record" do 
-    before(:all) do 
-      @archon = get_archon_client
-      pending "Needs an Archon connection" unless @archon
-    end
 
     def with(hash = {})
       create_test_set(
@@ -353,12 +357,6 @@ describe "Archon record mappings" do
 
 
   describe "Classification record" do 
-    before(:all) do 
-      @archon = get_archon_client
-      pending "Needs an Archon connection" unless @archon
-
-      JSONModel.set_repository(1)
-    end
 
     def with(hash = {})
       create_test_set(
@@ -402,15 +400,158 @@ describe "Archon record mappings" do
     
 
     it "maps 'ClassificationIdentifier' to classification.identifier" do
-      with do |rec, set|
-        set.first.identifier.should eq(rec['ClassificationIdentifier'])
+      %w(0 1).each do |i|
+        with('ParentID' => i) do |rec, set|
+          set.first.identifier.should eq(rec['ClassificationIdentifier'])
+        end
       end
     end
 
     it "maps 'Title' to 'classification(_term)?.title'" do
-      with do |rec, set|
-        set.first.title.should eq(rec['Title'])
+      %w(0 1).each do |i|
+        with('ParentID' => i) do |rec, set|
+          set.first.title.should eq(rec['Title'])
+        end
       end
     end
+
+
+    it "maps 'Description' to *.description" do
+      %w(0 1).each do |i|
+        with('ParentID' => i) do |rec, set|
+          set.first.description.should eq(rec['Description'])
+        end
+      end
+    end
+
+
+    it "can furnish a multi-part resource id" do
+      rec = Archon.record_type(:classification).find('4')
+      rec.resource_identifiers.should eq(['01', '01.A', '01.B'])
+    end
   end
+
+
+  describe "Archon Collection" do
+    before(:all) do
+      @rec = Archon.record_type(:collection).find('1')
+      @rec.class.transform(@rec) do |obj|
+        @obj =  obj
+      end
+      p @obj
+    end
+
+
+    it "always creates a resource with level = 'collection'" do
+      @obj.level.should eq('collection')
+    end
+
+
+    it "maps 'Extent' to resource.extents[0].number" do
+      @obj.extents[0]['number'].should eq(@rec['Extent'])
+    end
+
+
+    it "maps 'Title' to title" do
+      @obj.title.should eq(@rec['Title'])
+    end
+
+
+    it "maps 'CollectionIdentifier' to the last id_*" do
+      @obj.id_1.should eq(@rec['CollectionIdentifier'])
+    end
+
+
+    it "maps 'InclusiveDates' to dates[0] with type 'inclusive'" do
+      @obj.dates[0]['date_type'].should eq('inclusive')
+      @obj.dates[0]['expression'].should eq(@rec['InclusiveDates'])
+    end
+
+
+    it "maps 'PredominantDates' to dates[1] with type 'bulk'" do
+      @obj.dates[1]['date_type'].should eq('bulk')
+      @obj.dates[1]['expression'].should eq(@rec['PredominantDates'])
+    end
+
+
+    it "maps 'NormalDateBegin' and 'NormalDateEnd' to dates[0] begin and end" do
+      @obj.dates[0]['begin'].should eq(@rec['NormalDateBegin'])
+      @obj.dates[0]['end'].should eq(@rec['NormalDateEnd'])
+    end
+
+
+    it "maps 'FindingAidAuthor' to resource.finding_aid_author" do
+      @obj.finding_aid_author.should eq(@rec['FindingAidAuthor'])
+    end
+
+
+    it "maps 'Scope' to a single part note" do
+      @obj.notes[0]['jsonmodel_type'].should eq('note_singlepart')
+      @obj.notes[0]['label'].should eq("Scope and Contents")
+      @obj.notes[0]['content'][0].should eq(@rec['Scope'])
+    end
+
+
+    it "maps 'Abstract' to a single part note" do
+      @obj.notes[1]['jsonmodel_type'].should eq('note_singlepart')
+      @obj.notes[1]['label'].should eq("Abstract")
+      @obj.notes[1]['content'][0].should eq(@rec['Abstract'])
+    end
+
+
+    it "maps 'Arrangement' to a single part note" do
+      @obj.notes[2]['jsonmodel_type'].should eq('note_singlepart')
+      @obj.notes[2]['label'].should eq("Arrangement")
+      @obj.notes[2]['content'][0].should eq(@rec['Arrangement'])
+    end
+
+
+    it "maps 'MaterialTypeID' to resource_type" do
+      type = Archon.record_type(:materialtype).find(@rec['MaterialTypeID'])['MaterialType']
+      @obj.resource_type.should eq(type)
+    end
+
+    # TODO - complete note mappings
+
+    it "maps 'AcquisitionDate' to dates[].expression" do
+      @obj.dates[2]['expression'].should eq(@rec['AcquisitionDate'])
+    end
+
+
+    it "maps 'DescriptiveRulesID' to resource.finding_aid_description_rules" do
+      @obj.finding_aid_description_rules.should eq('aacr')
+    end
+
+
+    it "maps 'RevisionHistory' to 'resource:finding_aid_revision_description'" do
+      @obj.finding_aid_revision_description.should eq(@rec['RevisionHistory'])
+    end
+
+
+    it "maps 'PublicationDate' to 'resource:finding_aid_date'" do
+      @obj.finding_aid_date.should eq(@rec['PublicationDate'])
+    end
+
+
+    it "maps 'PublicationNote' to 'resource:finding_aid_note'" do
+      @obj.finding_aid_note.should eq(@rec['PublicationNote'])
+    end
+
+
+    it "maps 'FindingLanguageID' to 'resource:finding_aid_language'" do
+      @obj.finding_aid_language.should eq(@rec['FindingLanguageID'])
+    end
+
+
+    it "maps the first element in 'Languages' to resource.language" do
+      @obj.language.should eq(@rec['Languages'][0])
+    end
+
+
+    it "creates an instance for each item in 'Locations'" do
+      @obj.instances.count.should eq(@rec['Locations'].count)
+    end
+
+  end
+
 end

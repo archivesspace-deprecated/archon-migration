@@ -3,14 +3,7 @@ require_relative 'spec_helper'
 describe "Archon Client" do
   before(:all) do 
     @client = get_archon_client
-    if @client
-      repo = @client.get_json('/?p=core/repositories&batch_start=1')
-      unless repo['1']['Name'] == "Archon Migration Tracer"
-        pending "an Archon instance running against the archon_tracer database"
-      end
-    else
-      pending "an instance of Archon to run the test against"
-    end
+    verify_archon_dataset(@client)
   end
 
 
