@@ -65,10 +65,10 @@ module ArchivesSpace
     
     attr_reader :enum_source
 
-    def initialize(opts)
-      @url = opts[:url]
-      @user = opts[:user]
-      @password = opts[:password]
+    def initialize(opts = {})
+      @url = opts[:url] || Appdata.default_aspace_url
+      @user = opts[:user] || Appdata.default_aspace_user
+      @password = opts[:password] || Appdata.default_aspace_password
 
       init_session
 
