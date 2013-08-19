@@ -1,16 +1,3 @@
-# Lookup Lists
-Archon.record_type(:subjectsource) do
-  plural 'subjectsources'
-  include  Archon::EnumRecord
-end
-
-
-Archon.record_type(:creatorsource) do
-  plural 'creatorsources'
-  include Archon::EnumRecord
-end
-
-
 Archon.record_type(:repository) do
   plural 'repositories'
   corresponding_record_type :repository_with_agent
