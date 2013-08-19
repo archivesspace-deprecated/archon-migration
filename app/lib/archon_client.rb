@@ -10,6 +10,7 @@ module Archon
     if block_given?
       @@record_types[key] = Class.new(ArchonRecord, &block)
       @@record_types[key].instance_variable_set(:@key, key)
+      @@record_types[key].set_type(key)
     else
       @@record_types[key]
     end
@@ -105,6 +106,16 @@ module Archon
     end
 
 
+    def self.set_type(type)
+      @type = type
+    end
+
+
+    def self.get_type
+      @type
+    end
+
+
     def self.find(id)
       id = id.to_s
       @cache ||= {}
@@ -158,22 +169,26 @@ module Archon
     end
 
 
+    def self.import_id_for(id)
+      "#{self.get_type.to_s}-#{id}"
+    end
+
     def initialize(data)
       @data = data
     end
 
 
-    def [](key)
-      @data[key]
+    def import_id
+      self.class.import_id_for(self['ID'])
     end
 
-    alias_method :mm_orig, :method_missing
 
-    def method_missing(method, *args)
-      if @data.has_key?(args[0])
-        @data[args.shift]
+    def [](key)
+      val = @data[key]
+      unless val && val.empty? && val.is_a?(String)
+        val
       else
-        mm_orig(method, *args)
+        nil
       end
     end
   end
