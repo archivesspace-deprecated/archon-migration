@@ -438,7 +438,6 @@ describe "Archon record mappings" do
       @rec.class.transform(@rec) do |obj|
         @obj =  obj
       end
-      p @obj
     end
 
 
@@ -551,7 +550,29 @@ describe "Archon record mappings" do
     it "creates an instance for each item in 'Locations'" do
       @obj.instances.count.should eq(@rec['Locations'].count)
     end
-
   end
 
+  describe "Archon Accession" do
+    before(:all) do
+      @rec = Archon.record_type(:accession).find('1')
+      @rec.class.transform(@rec) do |obj|
+        @obj =  obj
+      end
+    end
+
+    def change(rec, overwrites)
+      data = rec.instance_variable_get(:@data)
+      rec.instance_variable_set(:@data, data.merge(overwrites))
+      rec
+    end
+
+    it "maps 'Enabled' to accession.publish" do
+      @obj.publish.should be_true
+      @rec.class.transform(change(@rec, {'Enabled' => '0'})) do |obj|
+        obj.publish.should_not be_true
+      end
+    end
+    
+
+  end
 end

@@ -150,6 +150,8 @@ module Archon
         end
 
         obj
+      else
+        raise "error"
       end
     end
 
