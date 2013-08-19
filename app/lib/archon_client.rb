@@ -106,6 +106,7 @@ module Archon
 
 
     def self.find(id)
+      id = id.to_s
       @cache ||= {}
       if @cache.has_key?(id)
         return @cache[id]
@@ -136,7 +137,8 @@ module Archon
         if obj.respond_to?(:uri) && rec["ID"]
           obj.uri = obj.class.uri_for(rec["ID"])
         end
-        return obj
+
+        obj
       end
     end
 
@@ -265,7 +267,6 @@ module Archon
 
     def initialize(opts = {})
       @url = opts[:url] || Appdata.default_archon_url
-
       @user = opts[:user] || Appdata.default_archon_user
       @password = opts[:password] || Appdata.default_archon_password
 
