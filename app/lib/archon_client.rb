@@ -157,7 +157,7 @@ module Archon
     def self.model(type, data = nil)
       model = ASpaceImport.JSONModel(type)
       if data
-        model.from_hash(data)
+        model.from_hash(data, false)
       else
         model
       end
@@ -198,7 +198,7 @@ module Archon
 
 
     def self.import_id_for(id)
-      "#{self.get_type.to_s}-#{id}"
+      "import_#{self.get_type.hash}-#{id}"
     end
 
     def initialize(data)
