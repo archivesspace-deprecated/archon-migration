@@ -1,6 +1,9 @@
+require_relative 'archon_mixins'
+
 Archon.record_type(:collection) do
   plural 'collections'
   corresponding_record_type :resource
+  include GenericArchivalObject
 
   def self.transform(rec)
     obj = super
@@ -8,9 +11,9 @@ Archon.record_type(:collection) do
     obj.level = 'collection'
     obj.title = rec['Title']
 
-    c = Archon.record_type(:classification).find(rec['ClassificationID'])
-    c_uri = ASpaceImport.JSONModel(c.aspace_type).uri_for(c['ID'])
-    obj.classification = {:ref => c_uri}
+    # c = Archon.record_type(:classification).find(rec['ClassificationID'])
+    # c_uri = ASpaceImport.JSONModel(c.aspace_type).uri_for(c['ID'])
+    # obj.classification = {:ref => c_uri}
     
 
     ids = c.resource_identifiers
@@ -82,10 +85,10 @@ Archon.record_type(:collection) do
                          })
     end
 
-    if rec['MaterialTypeID']
-      type = Archon.record_type(:materialtype).find(rec['MaterialTypeID'])
-      obj.resource_type = type['MaterialType']
-    end
+    # if rec['MaterialTypeID']
+    #   type = Archon.record_type(:materialtype).find(rec['MaterialTypeID'])
+    #   obj.resource_type = type['MaterialType']
+    # end
 
     if rec['AcquisitionDate']
       obj.dates << model(:date,
@@ -143,13 +146,6 @@ Archon.record_type(:collection) do
 
 
     yield obj
-  end
-
-
-  # to do: put this in enum model
-  def self.get_extent_type(id)
-    rec = Archon.record_type(:extentunit).find(id)
-    rec['ExtentUnit']
   end
 
 
