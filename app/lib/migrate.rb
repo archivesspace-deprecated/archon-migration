@@ -16,6 +16,8 @@ class MigrationJob
     @args[:aspace_user] ||= Appdata.default_aspace_user
     @args[:aspace_password] ||= Appdata.default_aspace_password
 
+    @args[:default_repository] ||= '1'
+
     # 1 job per thread
     raise "Job thread occupied." if Thread.current[:archon_migration_job]
     Thread.current[:archon_migration_job] = self
@@ -128,6 +130,8 @@ class MigrationJob
       $log.debug("Importing content for repository #{repo_id}")
 
       @archivesspace.repo(repo_id).import(y) do |batch|
+
+        # Classifications
         Archon.record_type(:classification).each do |rec|
           rec.class.transform(rec) do |obj|
             # set the creator (can't do this now; aspace issue
@@ -137,6 +141,35 @@ class MigrationJob
           end
         end
 
+        # Accessions
+        if archon_repo_id = @args[:default_repository]
+          Archon.record_type(:accession).each do |rec|
+            # yields agents and accessions
+            rec.class.transform(rec) do |obj|
+              case obj.jsonmodel_type
+              when 'accession'
+                rec['Subjects'].each do |id|
+                  import_id = Archon.record_type(:subject).import_id_for(id)
+                  agent_or_subject_ref = @import_map[import_id]
+                  if agent_or_subject_ref =~ /agents/
+                    obj.linked_agents << {
+                      :ref => agent_or_subject_ref,
+                      :role => 'subject'
+                    }
+                  else 
+                    obj.subjects << {
+                      :ref => @import_map[import_id]
+                    }
+                  end
+                end
+              end
+
+              batch << obj
+            end
+          end
+        end
+
+        # Collections
         Archon.record_type(:collection).each do |rec|
           next unless rec['RepositoryID'] == archon_repo_id
           rec.class.transform(rec) do |obj|

@@ -19,6 +19,9 @@ describe "Migration" do
     JSONModel.set_repository(2)
 
     @r1 = find(:resource, 1, "resolve[]" => ['classification', 'linked_agents', 'subjects'])
+
+
+    @a1 = find(:accession, 1, "resolve[]" => ['classification', 'linked_agents', 'subjects'])
   end
 
   def find(type, id, opts={})
@@ -52,6 +55,30 @@ describe "Migration" do
   it "maps ids in 'Subjects' to linked subjects" do
     @r1.subjects.length.should eq(7)
   end
+
+
+  it "maps Accession:'Donor' to a linked_agents" do
+    link = @a1.linked_agents.find{|l| l['role'] == 'source'}
+    link['_resolved']['names'][0]['primary_name'].should eq("AccessionsMgr.Donor-Archon")
+    link['_resolved']['agent_contacts'][0]['name'].should eq("AccessionsMgr.Donor-Archon")
+  end
+
+
+  it "maps ids in Accession:Subjects to linked subjects" do
+    @a1.subjects.length.should eq(7)
+  end
+
+
+  it "maps ids in 'Creators' to linked_agents with type 'creator'" do
+    link = @a1.linked_agents.find{|l| l['role'] == 'creator'}
+    link['_resolved']['names'][0]['primary_name'].should eq('Creator.Corpname-Archon')
+  end
+
+
+  it "links an accession to a classification" do
+    @a1.classification['_resolved']['title'].should eq("ClassificationMgr.Title-Archon")
+  end
+
 end
     
 

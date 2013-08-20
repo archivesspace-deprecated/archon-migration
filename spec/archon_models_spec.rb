@@ -99,7 +99,7 @@ describe "Archon record mappings" do
 
   describe "Repository" do
     before :all do
-      @rec, results = create_test_set(:repository, %w(ID Name Code Address Address2 City State ZIPCode ZIPPlusFour Phone PhoneExtension Fax Email EmailSignature CountryID URL))
+      @rec, results = create_test_set(:repository, %w(ID Name Code Address Address2 City State ZIPCode ZIPPlusFour Phone PhoneExtension Fax Email EmailSignature Country URL))
       @agent = results.shift
       @repo = results.shift
     end
@@ -167,8 +167,8 @@ describe "Archon record mappings" do
     end
 
 
-    it "maps 'CountryID' to 'repository_with_agent.agent_representation.agent_contacts[0].country" do
-      @agent['agent_contacts'][0]['country'].should eq(@rec["CountryID"])
+    it "maps 'Country' to 'repository_with_agent.agent_representation.agent_contacts[0].country" do
+      @agent['agent_contacts'][0]['country'].should eq(@rec["Country"])
     end
   end
 
@@ -556,7 +556,11 @@ describe "Archon record mappings" do
     before(:all) do
       @rec = Archon.record_type(:accession).find('1')
       @rec.class.transform(@rec) do |obj|
-        @obj =  obj
+        if obj.jsonmodel_type == 'accession'
+          @obj = obj
+        elsif obj.jsonmodel_type == 'agent_person'
+          @donor = obj
+        end
       end
     end
 
@@ -569,10 +573,67 @@ describe "Archon record mappings" do
     it "maps 'Enabled' to accession.publish" do
       @obj.publish.should be_true
       @rec.class.transform(change(@rec, {'Enabled' => '0'})) do |obj|
-        obj.publish.should_not be_true
+        if obj.jsonmodel_type == 'accession'
+          obj.publish.should_not be_true
+        end
       end
+    end
+
+
+    it "maps 'AccessionDate'" do
+      @obj.accession_date.should eq(@rec['AccessionDate'])
     end
     
 
+    it "maps 'InclusiveDates'" do
+      @obj.dates[0].expression.should eq(@rec['InclusiveDates'])
+    end
+
+
+    it "maps 'ReceivedExtent'" do
+      @obj.extents[0]['number'].should eq(@rec['ReceivedExtent'])
+    end
+
+
+    it "maps 'MaterialTypeID'" do
+      type = Archon.record_type(:materialtype).find(@rec['MaterialTypeID'])['MaterialType']
+      @obj.resource_type.should eq(type)
+    end
+
+
+    it "maps 'ProcessingPriorityID'" do
+      @obj.collection_management['processing_priority'].should eq('ProcessPriorityMgr.ProcessingPriority-Archon')
+    end
+
+
+    it "maps 'ExpectedCompletionDate'" do
+      @obj.collection_management['processing_plan'].should eq("Expected Completion Date: " + @rec['ExpectedCompletionDate'])
+    end
+
+ 
+    it "maps 'DonorContactInformation'" do
+      @donor.agent_contacts[0].address_1.should eq(@rec['DonorContactInformation'])
+    end
+
+
+    it "maps 'DonorNotes'" do
+      @donor.agent_contacts[0].note.should eq(@rec['DonorNotes'])
+    end
+
+
+    it "maps 'PhysicalDescription'" do
+      @obj.condition_description.should eq @rec['PhysicalDescription']
+    end
+
+
+    it "maps 'ScopeContent'" do
+      @obj.content_description.should eq(@rec['ScopeContent'])
+    end
+
+
+    it "maps 'Comments'" do
+      @obj.general_note.should eq(@rec['Comments'])
+    end
+    
   end
 end

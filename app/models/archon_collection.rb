@@ -11,10 +11,9 @@ Archon.record_type(:collection) do
     obj.level = 'collection'
     obj.title = rec['Title']
 
-    # c = Archon.record_type(:classification).find(rec['ClassificationID'])
-    # c_uri = ASpaceImport.JSONModel(c.aspace_type).uri_for(c['ID'])
-    # obj.classification = {:ref => c_uri}
-    
+    c = Archon.record_type(:classification).find(rec['ClassificationID'])
+    c_uri = ASpaceImport.JSONModel(c.aspace_type).uri_for(c.import_id)
+    obj.classification = {:ref => c_uri}
 
     ids = c.resource_identifiers
     i = 0
