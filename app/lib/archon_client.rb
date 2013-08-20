@@ -63,10 +63,32 @@ module Archon
         
     end
   end
-    
+
+
+  module EnumLookupHelpers
+
+    def self.included(base)
+      base.extend(ClassMethods)
+    end
+
+    module ClassMethods
+
+      def get_extent_type(id)
+        rec = Archon.record_type(:extentunit).find(id)
+        rec['ExtentUnit']
+      end
+
+      def get_processing_priority(id)
+        rec = Archon.record_type(:processingpriority).find(id)
+        rec['ProcessingPriority']
+      end
+    end
+  end
+
 
   class ArchonRecord
     include RecordSetupHelpers
+    include EnumLookupHelpers
 
     def self.each
       raise NoArchonClientException unless Thread.current[:archon_client]
@@ -162,12 +184,16 @@ module Archon
     end
 
 
-    def self.name_template(rec)
-    {
-      :name_order => unspecified('direct'),
-      :sort_name_auto_generate => true,
-      :authority_id => rec['Identifier']
-    }
+    def self.name_template(rec=nil)
+      hsh = {
+        :name_order => unspecified('direct'),
+        :sort_name_auto_generate => true,
+      }
+      if rec && rec['Identifier']
+        hsh.merge!(:authority_id => rec['Identifier'])
+      end
+      
+      hsh
     end
 
 
@@ -186,12 +212,29 @@ module Archon
 
 
     def [](key)
+      unless @data.has_key?(key)
+        raise "Bad key (#{key}) used to access Archon -#{@type}- data"
+      end
       val = @data[key]
       unless val && val.empty? && val.is_a?(String)
         val
       else
         nil
       end
+    end
+
+
+    def has_key?(k)
+      @data.has_key?(k)
+    end
+
+
+    def pp
+      @data.each do |k,v|
+        p "#{k}: #{v}\n"
+      end
+
+      nil
     end
   end
 
