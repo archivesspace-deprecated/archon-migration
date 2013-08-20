@@ -3,10 +3,15 @@
  :subjectsource,
  :creatorsource,
  :extentunit,
- :materialtype
+ :materialtype,
+ :processingpriority 
 ].each do |enum_type|
   Archon.record_type(enum_type) do
-    plural enum_type.to_s << 's'
+    pl = case enum_type
+         when :processingpriority; 'processingpriorities'
+         else; enum_type.to_s << 's'
+         end
+    plural pl
     include  Archon::EnumRecord
   end
 end
