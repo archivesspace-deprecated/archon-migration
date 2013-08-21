@@ -101,7 +101,7 @@ module Archon
         elsif result_set.is_a?(Hash)
           result_set.each {|i, rec| yield self.new(rec) }
         else
-          raise "Unintelligble data structure #{result_set.inspect}"
+          raise "Unintelligible data structure #{result_set.inspect}"
         end
         break if result_set.count < 100
         i += 100

@@ -8,6 +8,7 @@ describe "Archon record mappings" do
     pending "Needs an Archon connection" unless @archon
 
     JSONModel.set_repository(1)
+    Thread.current[:archivesspace_client] = MockArchivesSpaceClient.new 
   end
 
 
@@ -48,10 +49,18 @@ describe "Archon record mappings" do
   end
 
 
-  before(:all) do
-    Thread.current[:archivesspace_client] = MockArchivesSpaceClient.new 
-  end
+  shared_examples "archival object location mappings" do
+    
+    it "creates an instance for each item in 'Locations'" do
+      object.instances.count.should eq(record['Locations'].count)
+    end
 
+    it "maps 'Content' to instances[].container.indicator_1" do
+      content = record['Locations'][0]['Content']
+      object.instances[0]['container']['indicator_1'].should eq(content)
+    end
+
+  end
 
   describe "Users" do
     before :all do
@@ -547,8 +556,9 @@ describe "Archon record mappings" do
     end
 
 
-    it "creates an instance for each item in 'Locations'" do
-      @obj.instances.count.should eq(@rec['Locations'].count)
+    it_behaves_like "archival object location mappings" do
+      let(:object) { @obj }
+      let(:record) { @rec }
     end
   end
 
@@ -634,6 +644,11 @@ describe "Archon record mappings" do
     it "maps 'Comments'" do
       @obj.general_note.should eq(@rec['Comments'])
     end
-    
+
+
+    it_behaves_like "archival object location mappings" do
+      let(:object) { @obj }
+      let(:record) { @rec }
+    end    
   end
 end
