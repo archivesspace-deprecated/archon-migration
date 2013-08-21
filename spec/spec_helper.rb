@@ -34,7 +34,7 @@ def verify_archon_dataset(client=nil)
   client = client ? client : get_archon_client
   if client
     repo = client.get_json('/?p=core/repositories&batch_start=1')
-    unless repo['1']['Name'] == "Archon Migration Tracer"
+    unless repo['1'] && repo['1']['Name'] == "Archon Migration Tracer"
       pending "an Archon instance running against the archon_tracer database"
     end
   else

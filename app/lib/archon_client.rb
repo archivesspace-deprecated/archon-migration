@@ -97,7 +97,15 @@ module Archon
       loop do
         result_set = Thread.current[:archon_client].get_json(endpoint(i))
         if result_set.is_a?(Array)
-          result_set.each {|rec| yield self.new(rec)}
+          if result_set.length == 2 && result_set[1].empty?
+            result_set[0].each do |i, rec|
+              yield self.new(rec)
+            end
+          else
+            result_set.each do |rec|
+              yield self.new(rec)
+            end
+          end
         elsif result_set.is_a?(Hash)
           result_set.each {|i, rec| yield self.new(rec) }
         else
@@ -231,7 +239,7 @@ module Archon
 
     def pp
       @data.each do |k,v|
-        p "#{k}: #{v}\n"
+        p "#{k}: #{v}"
       end
 
       nil
@@ -262,7 +270,12 @@ module Archon
           json = JSON.parse(response.body)
           json
         rescue JSON::ParserError
-          raise "Archon response is not JSON!"
+          $log.debug(response.body)
+          if response.body.match(/No matching record\(s\) found/)
+            return nil
+          else
+            raise "Archon response is not JSON!"
+          end
         end
       end
     end

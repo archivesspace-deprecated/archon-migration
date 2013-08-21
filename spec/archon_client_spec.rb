@@ -25,7 +25,7 @@ describe "Archon Client" do
 
   it "can find a subject record by ID" do
     s = Archon.record_type(:subject).find("2")
-    s.has_key?("ID").should eq("2")
+    s["ID"].should eq("2")
   end
 
 
@@ -48,5 +48,15 @@ describe "Archon Client" do
     df = Archon.record_type(:digitalfile)
     bitstream = @client.get_bitstream('/?p=core/digitalfileblob&fileid=1')
     bitstream[0,4].should eq("\xff\xd8\xff\xe0")
+  end
+
+
+  it "can iterate over content records in a collection" do
+    ids = []
+    Archon.record_type(:content).set("1").each do |rec|
+      p rec
+      ids << rec['ID']
+    end
+    ids.count.should eq(12)
   end
 end
