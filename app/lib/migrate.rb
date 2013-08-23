@@ -148,20 +148,7 @@ class MigrationJob
             rec.class.transform(rec) do |obj|
               case obj.jsonmodel_type
               when 'accession'
-                rec['Subjects'].each do |id|
-                  import_id = Archon.record_type(:subject).import_id_for(id)
-                  agent_or_subject_ref = @import_map[import_id]
-                  if agent_or_subject_ref =~ /agents/
-                    obj.linked_agents << {
-                      :ref => agent_or_subject_ref,
-                      :role => 'subject'
-                    }
-                  else 
-                    obj.subjects << {
-                      :ref => @import_map[import_id]
-                    }
-                  end
-                end
+                resolve_ids_to_links(rec, obj)
               end
 
               batch << obj
@@ -176,28 +163,7 @@ class MigrationJob
           next unless rec['RepositoryID'] == archon_repo_id
           rec.class.transform(rec) do |obj|
 
-            rec['Creators'].each do |id|
-              import_id = Archon.record_type(:creator).import_id_for(id)
-              obj.linked_agents << {
-                :ref => @import_map[import_id],
-                :role => 'creator'
-              }
-            end
-
-            rec['Subjects'].each do |id|
-              import_id = Archon.record_type(:subject).import_id_for(id)
-              agent_or_subject_ref = @import_map[import_id]
-              if agent_or_subject_ref =~ /agents/
-                obj.linked_agents << {
-                  :ref => agent_or_subject_ref,
-                  :role => 'subject'
-                }
-              else 
-                obj.subjects << {
-                  :ref => @import_map[import_id]
-                }
-              end
-            end
+            resolve_ids_to_links(rec, obj) 
 
             batch << obj
 
@@ -211,7 +177,8 @@ class MigrationJob
                     container_trees[obj_or_cont[0]] = []
                   end
                   container_trees[obj_or_cont[0]] << obj_or_cont[1]
-                else                  
+                else
+                  resolve_ids_to_links(rec, obj_or_cont)
                   batch << obj_or_cont
                 end
               end
@@ -221,8 +188,7 @@ class MigrationJob
               next unless obj.jsonmodel_type == 'archival_object'
               container_data = (container_trees[obj.key] || [])
               cd = ancestor_containers(obj, batch, container_trees, container_data)
-              p cd
-              p "HERE"
+
               if cd.count > 3
                 raise "Container tree too big for ASpace"
               end
@@ -240,14 +206,13 @@ class MigrationJob
 
                 obj.instances << instance
               end
-                  
             end
-
           end
         end
       end
     end
   end
+
 
   def ancestor_containers(obj, batch, container_trees, container_data)
     return container_data unless obj.parent
@@ -262,5 +227,32 @@ class MigrationJob
     return container_data if container_data.length > 2
 
     ancestor_containers(parent, batch, container_trees, container_data)
+  end
+
+
+  def resolve_ids_to_links(rec, obj)
+    rec['Creators'].each do |id|
+      import_id = Archon.record_type(:creator).import_id_for(id)
+      obj.linked_agents << {
+        :ref => @import_map[import_id],
+        :role => 'creator'
+      }
+    end
+
+
+    rec['Subjects'].each do |id|
+      import_id = Archon.record_type(:subject).import_id_for(id)
+      agent_or_subject_ref = @import_map[import_id]
+      if agent_or_subject_ref =~ /agents/
+        obj.linked_agents << {
+          :ref => agent_or_subject_ref,
+          :role => 'subject'
+        }
+      else 
+        obj.subjects << {
+          :ref => @import_map[import_id]
+        }
+      end
+    end
   end
 end

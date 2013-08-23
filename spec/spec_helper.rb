@@ -43,8 +43,23 @@ def verify_archon_dataset(client=nil)
 end
 
 
+def get_notes_by_type(obj, note_type)
+  obj['notes'].select{|n| n['type'] == note_type}
+end
+
+
 def get_subnotes_by_type(obj, note_type)
   obj['subnotes'].select {|sn| sn['jsonmodel_type'] == note_type}
+end
+
+
+def get_note_content(note)
+  case note['jsonmodel_type']
+  when 'note_singlepart'
+    note['content'].join('')
+  when 'note_multipart'
+    note['subnotes'].select{|sn| sn['jsonmodel_type'] == 'note_text'}.map{|sn| sn['content']}.join('')
+  end
 end
 
 

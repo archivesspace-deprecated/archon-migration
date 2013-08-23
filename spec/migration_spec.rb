@@ -86,6 +86,12 @@ describe "Migration" do
     aa.instances.count.should eq(1)
   end
 
+
+  it "maps ids in Content:Subjects to linked subjects" do
+    ao = find(:archival_object, 1)
+    ao.subjects.length.should eq(7)
+  end
+
 end
     
 

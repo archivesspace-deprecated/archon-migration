@@ -69,6 +69,7 @@ describe "Archon record mappings" do
 
   end
 
+
   describe "Users" do
     before :all do
 
@@ -666,6 +667,7 @@ describe "Archon record mappings" do
 
     before(:all) do
       @rec = Archon.record_type(:content).set(1).find(1)
+      @obj = t(@rec)
     end 
 
     let(:klass) { Archon.record_type(:content) }
@@ -720,6 +722,43 @@ describe "Archon record mappings" do
 
       t(bot).parent['ref'].should eq(t(top).uri)
     end
-    
+
+
+    it "maps 'PrivateTitle' to a 'materialspec' note_singlepart" do
+      n = get_notes_by_type(@obj, 'materialspec')[0]
+      n.label.should eq('Private Title')
+      n.publish.should be_false
+      n.content[0].should eq(@rec['PrivateTitle'])
+    end
+
+
+    it "maps 'Date' to dates[0].expression" do
+      @obj.dates[0]['expression'].should eq(@rec['Date'])
+    end
+
+
+    it "maps 'Description' to 'scopecontent' note_multipart" do
+      n = get_notes_by_type(@obj, 'scopecontent')[0]
+      n.subnotes[0]['content'].should eq(@rec['Description'])
+    end
+
+
+    it "maps 'SortOrder' to 'position'" do
+      @obj.position.should eq(@rec['SortOrder'].to_i)
+    end
+
+
+    it "maps 'UniqueID' to 'component_id'" do
+      @obj.component_id.should eq(@rec['UniqueID'])
+    end
+
+
+    it "maps 'Notes' to 'notes'" do
+      @rec['Notes'].values.each do |note_data|
+        n = get_notes_by_type(@obj, note_data['NoteType'])[-1]
+        n.label.should eq(note_data['Label'])
+        get_note_content(n).should eq(note_data['Content'])
+      end
+    end
   end
 end
