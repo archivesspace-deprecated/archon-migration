@@ -82,6 +82,12 @@ module Archon
         rec = Archon.record_type(:processingpriority).find(id)
         rec['ProcessingPriority']
       end
+
+      def get_container_type(id)
+        rec = Archon.record_type(:containertype).find(id)
+        rec['ContainerType']
+      end
+
     end
   end
 
@@ -175,8 +181,8 @@ module Archon
     def self.transform(rec)
       if @aspace_record_type
         obj = ASpaceImport.JSONModel(@aspace_record_type).new
-        if obj.respond_to?(:uri) && rec["ID"]
-          obj.uri = obj.class.uri_for(rec["ID"])
+        if obj.respond_to?(:uri) && rec.import_id
+          obj.uri = obj.class.uri_for(rec.import_id)
         end
 
         obj

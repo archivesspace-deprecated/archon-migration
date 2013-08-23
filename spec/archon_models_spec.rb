@@ -49,6 +49,13 @@ describe "Archon record mappings" do
   end
 
 
+  def change(rec_orig, overwrites)
+    rec = rec_orig.clone
+    data = rec.instance_variable_get(:@data)
+    rec.instance_variable_set(:@data, data.merge(overwrites))
+    rec
+  end
+
   shared_examples "archival object location mappings" do
     
     it "creates an instance for each item in 'Locations'" do
@@ -455,6 +462,11 @@ describe "Archon record mappings" do
     end
 
 
+    it "assigns an import URI to the resource" do
+      @obj.uri.should match(/resources\/import_.*-[0-9]+/)
+    end
+
+
     it "maps 'Extent' to resource.extents[0].number" do
       @obj.extents[0]['number'].should eq(@rec['Extent'])
     end
@@ -574,12 +586,6 @@ describe "Archon record mappings" do
       end
     end
 
-    def change(rec, overwrites)
-      data = rec.instance_variable_get(:@data)
-      rec.instance_variable_set(:@data, data.merge(overwrites))
-      rec
-    end
-
     it "maps 'Enabled' to accession.publish" do
       @obj.publish.should be_true
       @rec.class.transform(change(@rec, {'Enabled' => '0'})) do |obj|
@@ -650,5 +656,70 @@ describe "Archon record mappings" do
       let(:object) { @obj }
       let(:record) { @rec }
     end    
+  end
+
+
+  describe "Archon Content" do
+    def t(rec)
+      rec.class.to_archival_object(rec)
+    end
+
+    before(:all) do
+      @rec = Archon.record_type(:content).set(1).find(1)
+    end 
+
+    let(:klass) { Archon.record_type(:content) }
+
+    it "yields an archival object if ContentType is 1 or 3" do
+      {'1' => [true], '2' => [false], '3' => [true, false]}.each do |ct, boolean|
+        @rec.class.transform(change(@rec, {'ContentType' => ct})) do |obj|
+          (obj.respond_to?(:jsonmodel_type)).should eq(boolean.shift)
+        end
+      end
+    end
+
+
+    it "maps 'EADLevel' to aa.level"do
+      @rec.class.transform(change(@rec, {'ContentType' => '1'})) do |obj|        
+        obj.level.should eq(@rec['EADLevel'])
+      end
+    end
+
+
+    it "maps 'Title' to aa.title" do
+      @rec.class.transform(change(@rec, {'ContentType' => '1'})) do |obj|        
+        obj.title.should eq(@rec['Title'])
+      end
+    end
+
+
+    it "links intellectual objects to their parents" do 
+      rec1, rec2 = [1,2].map {|i| Archon.record_type(:content).set(1).find(i) }
+      parent = Archon.record_type(:content).to_archival_object(rec1)
+      child = Archon.record_type(:content).to_archival_object(rec2)
+      child.parent['ref'].should eq(parent.uri)
+    end
+
+
+    it "links intellectual objects to their resource root" do
+      rec = Archon.record_type(:content).set(1).find(1)
+      resource_id = Archon.record_type(:collection).find(1).import_id
+      resource_uri = ASpaceImport.JSONModel(:resource).uri_for(resource_id)
+
+      obj = klass.to_archival_object(rec)
+      obj.resource['ref'].should eq(resource_uri)
+    end
+
+
+    it "links to the first ancestor that isn't physical only" do
+      top = klass.find(2)
+      mid = klass.find(3)
+      bot = klass.find(4)
+
+      mid['ContentType'].should eq('2')
+
+      t(bot).parent['ref'].should eq(t(top).uri)
+    end
+    
   end
 end

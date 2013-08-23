@@ -4,6 +4,7 @@
  :creatorsource,
  :extentunit,
  :materialtype,
+ :containertype,
  :processingpriority 
 ].each do |enum_type|
   Archon.record_type(enum_type) do

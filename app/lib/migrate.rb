@@ -144,7 +144,7 @@ class MigrationJob
         # Accessions
         if archon_repo_id = @args[:default_repository]
           Archon.record_type(:accession).each do |rec|
-            # yields agents and accessions
+            # yields agents and accessions, so check type
             rec.class.transform(rec) do |obj|
               case obj.jsonmodel_type
               when 'accession'
@@ -169,6 +169,8 @@ class MigrationJob
           end
         end
 
+        batch.write!
+        
         # Collections
         Archon.record_type(:collection).each do |rec|
           next unless rec['RepositoryID'] == archon_repo_id
@@ -198,9 +200,67 @@ class MigrationJob
             end
 
             batch << obj
+
+            # Content records
+            container_trees = {}
+
+            Archon.record_type(:content).set(rec["ID"]).each do |rec|
+              rec.class.transform(rec) do |obj_or_cont|
+                if obj_or_cont.is_a?(Array)
+                  unless container_trees.has_key?(obj_or_cont[0])
+                    container_trees[obj_or_cont[0]] = []
+                  end
+                  container_trees[obj_or_cont[0]] << obj_or_cont[1]
+                else                  
+                  batch << obj_or_cont
+                end
+              end
+            end
+
+            batch.each do |obj|
+              next unless obj.jsonmodel_type == 'archival_object'
+              container_data = (container_trees[obj.key] || [])
+              cd = ancestor_containers(obj, batch, container_trees, container_data)
+              p cd
+              p "HERE"
+              if cd.count > 3
+                raise "Container tree too big for ASpace"
+              end
+
+              unless cd.empty?
+                container = ASpaceImport.JSONModel(:container).new
+                cd.each_with_index do |data, i|
+                  container.send("type_#{i+1}=", data[:type])
+                  container.send("indicator_#{i+1}=", data[:indicator])
+                end
+                
+                instance = ASpaceImport.JSONModel(:instance).new
+                instance.container = container
+                instance.instance_type = 'text'
+
+                obj.instances << instance
+              end
+                  
+            end
+
           end
         end
       end
     end
+  end
+
+  def ancestor_containers(obj, batch, container_trees, container_data)
+    return container_data unless obj.parent
+
+
+    parent_uri = obj.parent['ref']
+    parent = batch.find {|objekt| objekt.uri == parent_uri}
+    if container_trees.has_key?(parent.key)
+      container_data = container_trees[parent.key] + container_data
+    end
+
+    return container_data if container_data.length > 2
+
+    ancestor_containers(parent, batch, container_trees, container_data)
   end
 end

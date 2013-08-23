@@ -22,6 +22,7 @@ describe "Migration" do
 
 
     @a1 = find(:accession, 1, "resolve[]" => ['classification', 'linked_agents', 'subjects'])
+
   end
 
   def find(type, id, opts={})
@@ -77,6 +78,12 @@ describe "Migration" do
 
   it "links an accession to a classification" do
     @a1.classification['_resolved']['title'].should eq("ClassificationMgr.Title-Archon")
+  end
+
+
+  it "links Content-derived instances to Content-derived archival_objects" do
+    aa = find(:archival_object, 2)
+    aa.instances.count.should eq(1)
   end
 
 end
