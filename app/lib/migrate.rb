@@ -190,13 +190,14 @@ class MigrationJob
               cd = ancestor_containers(obj, batch, container_trees, container_data)
 
               if cd.count > 3
+                $log.debug("Container Data: #{cd.inspect}")
                 raise "Container tree too big for ASpace"
               end
 
               unless cd.empty?
                 container = ASpaceImport.JSONModel(:container).new
                 cd.each_with_index do |data, i|
-                  container.send("type_#{i+1}=", data[:type])
+                  container.send("type_#{i+1}=", (data[:type] || "unknown"))
                   container.send("indicator_#{i+1}=", data[:indicator])
                 end
                 
@@ -224,7 +225,7 @@ class MigrationJob
       container_data = container_trees[parent.key] + container_data
     end
 
-    return container_data if container_data.length > 2
+    return container_data[-3..-1] if container_data.length > 2
 
     ancestor_containers(parent, batch, container_trees, container_data)
   end

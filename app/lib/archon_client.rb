@@ -75,17 +75,17 @@ module Archon
 
       def get_extent_type(id)
         rec = Archon.record_type(:extentunit).find(id)
-        rec['ExtentUnit']
+        rec ? rec['ExtentUnit'] : unspecified("unknown")
       end
 
       def get_processing_priority(id)
         rec = Archon.record_type(:processingpriority).find(id)
-        rec['ProcessingPriority']
+        rec ? rec['ProcessingPriority'] : nil
       end
 
       def get_container_type(id)
         rec = Archon.record_type(:containertype).find(id)
-        rec['ContainerType']
+        rec ? rec['ContainerType'] : nil
       end
 
     end
@@ -152,8 +152,15 @@ module Archon
     end
 
 
+    def self.unfound(id = '0')
+      $log.warn("Couldn't find a #{@type} with the ID: #{id}")
+      nil
+    end
+
+
     def self.find(id)
       id = id.to_s
+      return unfound if id == '0'
       @cache ||= {}
       if @cache.has_key?(id)
         return @cache[id]
@@ -165,6 +172,8 @@ module Archon
           return @cache[id]
         end
       end
+      
+      return unfound(id)
     end
 
 
@@ -227,6 +236,7 @@ module Archon
 
     def [](key)
       unless @data.has_key?(key)
+        $log.debug("DATA: #{@data}")
         raise "Bad key (#{key}) used to access Archon -#{@type}- data"
       end
       val = @data[key]
@@ -268,7 +278,8 @@ module Archon
 
       req = Net::HTTP::Get.new(uri.request_uri)
       response = http_request(uri, req)
-      $log.debug("Raw Archon response: #{response.inspect}")
+      $log.debug("Raw Archon response : #{response.inspect}")
+      $log.debug("BODY: #{response.body}")
       if response.code != '200'
         raise "ERROR Getting JSON #{response.inspect}"
       else

@@ -11,7 +11,7 @@ module GenericArchivalObject
 
       if rec['MaterialTypeID']
         type = Archon.record_type(:materialtype).find(rec['MaterialTypeID'])
-        obj.resource_type = type['MaterialType']
+        obj.resource_type = type ? type['MaterialType'] : unspecified("unknown")
       end
 
       rec['Locations'].each do |loc|
