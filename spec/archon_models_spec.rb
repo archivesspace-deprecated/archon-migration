@@ -532,7 +532,90 @@ describe "Archon record mappings" do
       @obj.resource_type.should eq(type)
     end
 
-    # TODO - complete note mappings
+
+    it "maps 'AltExtentStatement' to resource.extents[1].number" do
+      e = @obj.extents[1]
+      e['number'].should eq(@rec['AltExtentStatement'])
+      e['portion'].should eq('whole')
+      e['extent_type'].should eq('other_unmapped')
+    end
+
+
+    [
+      {:archon_type => 'AccessRestrictions', 
+       :note_type => 'accessrestrict', 
+       :label => 'Conditions Governing Access'},
+
+      {:archon_type => 'UseRestrictions', 
+       :note_type => 'userestrict', 
+       :label => 'Conditions Governing Use'},
+
+      {:archon_type => 'PhysicalAccess', 
+       :note_type => 'phystech', 
+       :label => 'Physical Access Requirements'},
+
+      {:archon_type => 'TechnicalAccess', 
+       :note_type => 'phystech', 
+       :label => 'Technical Access Requirements'},
+
+      {:archon_type => 'AcquisitionSource', 
+       :note_type => 'acqinfo', 
+       :label => 'Source of Acquisition'},
+
+      {:archon_type => 'AcquisitionMethod', 
+       :note_type => 'acqinfo', 
+       :label => 'Method of Acquisition'},
+
+      {:archon_type => 'AppraisalInfo', 
+       :note_type => 'appraisal', 
+       :label => 'Appraisal Information'},
+
+      {:archon_type => 'AccrualInfo', 
+       :note_type => 'accruals', 
+       :label => 'Accruals and Additions'},
+
+      {:archon_type => 'CustodialHistory', 
+       :note_type => 'custodhist', 
+       :label => 'Custodial History'},
+
+     {:archon_type => 'RelatedPublications', 
+       :note_type => 'relatedmaterial', 
+       :label => 'Related Publications'},
+
+     {:archon_type => 'SeparatedMaterials', 
+       :note_type => 'separatedmaterial', 
+       :label => 'Separated Materials'},
+
+     {:archon_type => 'PreferredCitation', 
+       :note_type => 'prefercite', 
+       :label => 'Preferred Citation'},
+
+     {:archon_type => %w(OrigCopiesNote OrigCopiesURL RelatedMaterialsURL), 
+       :note_type => 'originalsloc', 
+       :label => 'Existence and Location of Originals'},
+
+     {:archon_type => %w(OtherNote OtherURL), 
+       :note_type => 'odd', 
+       :label => "Other Descriptive Information"},
+
+     {:archon_type => %w(BiogHist BiogHistAuthor),
+       :note_type => 'bioghist',
+       :label => "Biographical or Historical Information",
+       :joint => "Note written by "
+     }
+
+    ].each do |test_data|
+      src_label = [test_data[:archon_type]].flatten.join(", ")
+      joint = test_data.has_key?(:joint) ? test_data[:joint] : " "
+      it "maps #{src_label} to #{test_data[:note_type]}" do
+        src_value = [test_data[:archon_type]].flatten.map{|k| @rec[k] }.join(joint)
+        notes = get_notes_by_type(@obj, test_data[:note_type])
+        n = notes.find{|n| n['label'] == test_data[:label]}
+        n.should_not be_nil
+        n.subnotes[0]['content'].should eq(src_value)
+      end
+    end
+
 
     it "maps 'AcquisitionDate' to dates[].expression" do
       @obj.dates[2]['expression'].should eq("Date acquired: #{@rec['AcquisitionDate']}")

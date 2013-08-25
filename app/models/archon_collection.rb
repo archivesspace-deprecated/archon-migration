@@ -84,10 +84,6 @@ Archon.record_type(:collection) do
                          })
     end
 
-    # if rec['MaterialTypeID']
-    #   type = Archon.record_type(:materialtype).find(rec['MaterialTypeID'])
-    #   obj.resource_type = type['MaterialType']
-    # end
 
     if rec['AcquisitionDate']
       obj.dates << model(:date,
@@ -116,6 +112,40 @@ Archon.record_type(:collection) do
       obj.language = rec['Languages'][0]
     end
 
+
+    if rec['AltExtentStatement']
+      obj.extents << model(:extent,
+                           {
+                             :number => rec['AltExtentStatement'],
+                             :portion => 'whole',
+                             :extent_type => 'other_unmapped'
+                           })
+    end
+
+
+    note_mappings.each do |map|
+
+      joint = map[:joint] ? map[:joint] : " "
+      content = if map[:archon_type].is_a?(Array)
+                  map[:archon_type].map{|key| rec[key]}.compact.join(joint)
+                else
+                  rec[map[:archon_type]]
+                end
+
+      next if content.nil? || content.empty?
+
+      obj.notes << model(:note_multipart,
+                         {
+                           :type => map[:note_type],
+                           :label => map[:label],
+                           :subnotes => [model(:note_text,
+                                            {
+                                              :content => content
+                                            })]
+                         })
+
+    end
+
     yield obj
   end
 
@@ -136,6 +166,74 @@ Archon.record_type(:collection) do
     when '3'; 'rad'
     when '4'; 'isadg'
     end
+  end
+
+
+  def self.note_mappings
+    [
+     {:archon_type => 'AccessRestrictions', 
+       :note_type => 'accessrestrict', 
+       :label => 'Conditions Governing Access'},
+
+     {:archon_type => 'UseRestrictions', 
+       :note_type => 'userestrict', 
+       :label => 'Conditions Governing Use'},
+
+     {:archon_type => 'PhysicalAccess', 
+       :note_type => 'phystech', 
+       :label => 'Physical Access Requirements'},
+
+     {:archon_type => 'TechnicalAccess', 
+       :note_type => 'phystech', 
+       :label => 'Technical Access Requirements'},
+
+     {:archon_type => 'AcquisitionSource', 
+       :note_type => 'acqinfo', 
+       :label => 'Source of Acquisition'},
+
+     {:archon_type => 'AcquisitionMethod', 
+       :note_type => 'acqinfo', 
+       :label => 'Method of Acquisition'},
+
+     {:archon_type => 'AppraisalInfo', 
+       :note_type => 'appraisal', 
+       :label => 'Appraisal Information'},
+
+     {:archon_type => 'AccrualInfo', 
+       :note_type => 'accruals', 
+       :label => 'Accruals and Additions'},
+
+     {:archon_type => 'CustodialHistory', 
+       :note_type => 'custodhist', 
+       :label => 'Custodial History'},
+
+     {:archon_type => 'RelatedPublications', 
+       :note_type => 'relatedmaterial', 
+       :label => 'Related Publications'},
+
+     {:archon_type => 'SeparatedMaterials', 
+       :note_type => 'separatedmaterial', 
+       :label => 'Separated Materials'},
+
+     {:archon_type => 'PreferredCitation', 
+       :note_type => 'prefercite', 
+       :label => 'Preferred Citation'},
+
+     {:archon_type => %w(OrigCopiesNote OrigCopiesURL RelatedMaterialsURL), 
+       :note_type => 'originalsloc', 
+       :label => 'Existence and Location of Originals'},
+
+     {:archon_type => %w(OtherNote OtherURL), 
+       :note_type => 'odd', 
+       :label => "Other Descriptive Information"},
+
+     {:archon_type => %w(BiogHist BiogHistAuthor),
+       :note_type => 'bioghist',
+       :label => "Biographical or Historical Information",
+       :joint => "Note written by "
+     }
+
+    ]
   end
 
 end
