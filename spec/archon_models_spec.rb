@@ -535,7 +535,7 @@ describe "Archon record mappings" do
     # TODO - complete note mappings
 
     it "maps 'AcquisitionDate' to dates[].expression" do
-      @obj.dates[2]['expression'].should eq(@rec['AcquisitionDate'])
+      @obj.dates[2]['expression'].should eq("Date acquired: #{@rec['AcquisitionDate']}")
     end
 
 

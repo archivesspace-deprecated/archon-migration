@@ -42,7 +42,7 @@ Archon.record_type(:collection) do
                          :begin => rec['NormalDateBegin'],
                          :end => rec['NormalDateEnd'],
                          :date_type => 'inclusive',
-                         :label => unspecified('other')
+                         :label => unspecified('creation')
                        })
       
     if rec['PredominantDates']
@@ -50,7 +50,7 @@ Archon.record_type(:collection) do
                          {
                            :expression => rec['PredominantDates'],
                            :date_type => 'bulk',
-                           :label => unspecified('other')
+                           :label => unspecified('creation')
                          })
     end
 
@@ -92,7 +92,7 @@ Archon.record_type(:collection) do
     if rec['AcquisitionDate']
       obj.dates << model(:date,
                          {
-                           :expression => rec['AcquisitionDate'],
+                           :expression => "Date acquired: #{rec['AcquisitionDate']}",
                            :date_type => 'single',
                            :label => unspecified('other')
                          })

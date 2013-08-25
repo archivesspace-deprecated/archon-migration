@@ -69,7 +69,7 @@ Archon.record_type(:content) do
                          {
                            :expression => rec['Date'],
                            :date_type => 'single',
-                           :label => 'Creation'
+                           :label => 'creation'
                          })
     end
 
