@@ -33,7 +33,9 @@ function updateStatus(update, emitter){
     if (update.type == 'error') {
       emitter.show_error(update.body);
     } else if (update.type == 'status') {
-      emitter.refresh_status(update.body);
+      emitter.refresh_status(update.body, update.source);
+    } else if (update.type == 'warning') {
+      emitter.show_warning(update.body)
     } else {
       // todo: toggle in progress bar
     }
@@ -43,13 +45,17 @@ function updateStatus(update, emitter){
 function StatusEmitter() {
   var console = $('#status-console');
 
-  this.refresh_status = function(status){
-      console.append("<p>"+status+"</p>");
+  this.refresh_status = function(status, source){
+    console.append("<p class=\"" + source + "\">"+status+"</p>");
   }
 
   this.show_error = function(error){
     console.addClass('error');
     console.append("<p><b>"+error+"</b></p>");
+  }
+
+  this.show_warning = function(warning){
+    console.append("<p class='warn'>" + warning + "</p>");
   }
 }
 

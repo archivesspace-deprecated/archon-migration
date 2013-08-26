@@ -48,6 +48,8 @@ post '/jobs' do
 
   Enumerator.new do |y|
     begin
+      $syslog = $log
+      $log = MigrationLog.new(y, $syslog)
       m = MigrationJob.new(params[:job])
       m.migrate(y)
     rescue JSONModel::ValidationException => e
@@ -59,6 +61,8 @@ post '/jobs' do
     rescue Exception => e
       $log.debug("Server Error: "+e.to_s)
       y << JSON.generate({:type => :error, :body => e.to_s}) + "---\n"
+    ensure
+      $log = $syslog
     end
   end
 end

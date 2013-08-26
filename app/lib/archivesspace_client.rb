@@ -164,6 +164,7 @@ module ArchivesSpace
       if message['saved']
         r = {
           :type => 'status',
+          :source => 'aspace',
           :body => "Saved #{message['saved'].keys.count} records"
         }
         yield r
@@ -173,6 +174,7 @@ module ArchivesSpace
           if status['type'] == 'started'
             r =  {
               :type => 'status',
+              :source => 'aspace',
               :body => status['label'],
               :id => status['id']
             }
@@ -182,6 +184,7 @@ module ArchivesSpace
       elsif message['ticks']
         r =  {
           :type => 'progress',
+          :source => 'aspace',
           :ticks => message['ticks'],
           :total => message['total']
         }
