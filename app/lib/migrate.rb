@@ -50,17 +50,19 @@ class MigrationJob
 
 
   def migrate(y)
+    @y = y
     Thread.current[:selected_repo_id] = 1
 
     # 1: Repositories
-    save_map = @archivesspace.import(y) do |batch|
+    emit_status("Migrating Repository records")
+
+    save_map = @archivesspace.import(@y) do |batch|
 
       [
        :repository
       ].each do |key|
 
         Archon.record_type(key).each do |rec|
-          $log.debug("Migrating Record #{rec.inspect}")
           rec.class.transform(rec) do |obj|
             batch << obj
           end
@@ -71,6 +73,8 @@ class MigrationJob
     @repo_map = save_map.select{|k, v| v =~ /repositories/}
 
     # 2: Users (must use dedicated controller)
+    emit_status("Migrating User records")
+
     Archon.record_type(:user).each do |rec|
       rec.class.transform(rec) do |obj|
         my_groups = []
@@ -86,16 +90,7 @@ class MigrationJob
           all_groups = @archivesspace.get_json("#{aspace_uri}/groups")
           # take the lowest group ID
           old_group_id = rec["Usergroups"].sort.first
-          group_codes = case old_group_id
-                        when "1"
-                          %w(repository-managers repository-project-managers)
-                        when "2"
-                          %w(repository-advanced-data-entry)
-                        when "3"
-                          %w(repository-basic-data-entry)
-                        when "4"
-                          %w(repository-viewers)
-                        end
+          group_codes = map_group_id(old_group_id)
           group_codes.each do |gc|
             my_groups << all_groups.find{|g| g['group_code'] == gc}['uri']
           end
@@ -108,116 +103,19 @@ class MigrationJob
       end
     end
 
+    emit_status("Migrating Creator and Subject records")
     # 3: Global scope objects
-    @import_map = @archivesspace.import(y) do |batch|
-      [
-       :subject,
-       :creator
-      ].each do |key|
-      
-        Archon.record_type(key).each do |rec|
-          $log.debug("Migrating Record: #{rec.inspect}")
-          rec.class.transform(rec) do |obj|
-            batch << obj
-          end
-        end
-      end
-    end
+    @import_map = migrate_creators_and_subjects
 
     # Iterate through repositories
     @repo_map.each do |archon_repo_id, aspace_repo_uri|
-      repo_id = aspace_repo_uri.sub(/.*\//,'')
-      $log.debug("Importing content for repository #{repo_id}")
-
-      @archivesspace.repo(repo_id).import(y) do |batch|
-
-        # Classifications
-        Archon.record_type(:classification).each do |rec|
-          rec.class.transform(rec) do |obj|
-            # set the creator (can't do this now; aspace issue
-            # creator_uri = @import_map[rec.import_id]
-            # obj.creator = {'ref' => creator_uri}
-            batch << obj
-          end
-        end
-
-        # Accessions
-        if archon_repo_id = @args[:default_repository]
-          Archon.record_type(:accession).each do |rec|
-            # yields agents and accessions, so check type
-            rec.class.transform(rec) do |obj|
-              case obj.jsonmodel_type
-              when 'accession'
-                resolve_ids_to_links(rec, obj)
-              end
-
-              batch << obj
-            end
-          end
-        end
-
-        batch.write!
-        
-        # Collections
-        Archon.record_type(:collection).each do |rec|
-          next unless rec['RepositoryID'] == archon_repo_id
-          rec.class.transform(rec) do |obj|
-
-            resolve_ids_to_links(rec, obj) 
-
-            batch << obj
-
-            # Content records
-            container_trees = {}
-
-            Archon.record_type(:content).set(rec["ID"]).each do |rec|
-              rec.class.transform(rec) do |obj_or_cont|
-                if obj_or_cont.is_a?(Array)
-                  unless container_trees.has_key?(obj_or_cont[0])
-                    container_trees[obj_or_cont[0]] = []
-                  end
-                  container_trees[obj_or_cont[0]] << obj_or_cont[1]
-                else
-                  resolve_ids_to_links(rec, obj_or_cont)
-                  batch << obj_or_cont
-                end
-              end
-            end
-
-            batch.each do |obj|
-              next unless obj.jsonmodel_type == 'archival_object'
-              container_data = (container_trees[obj.key] || [])
-              cd = ancestor_containers(obj, batch, container_trees, container_data)
-
-              if cd.count > 3
-                $log.debug("Container Data: #{cd.inspect}")
-                raise "Container tree too big for ASpace"
-              end
-
-              unless cd.empty?
-                container = ASpaceImport.JSONModel(:container).new
-                cd.each_with_index do |data, i|
-                  container.send("type_#{i+1}=", (data[:type] || "unknown"))
-                  container.send("indicator_#{i+1}=", data[:indicator])
-                end
-                
-                instance = ASpaceImport.JSONModel(:instance).new
-                instance.container = container
-                instance.instance_type = 'text'
-
-                obj.instances << instance
-              end
-            end
-          end
-        end
-      end
+      migrate_repository(archon_repo_id, aspace_repo_uri)
     end
   end
 
 
   def ancestor_containers(obj, batch, container_trees, container_data)
     return container_data unless obj.parent
-
 
     parent_uri = obj.parent['ref']
     parent = batch.find {|objekt| objekt.uri == parent_uri}
@@ -255,5 +153,161 @@ class MigrationJob
         }
       end
     end
+  end
+
+
+  def emit_status(msg)
+    @y << JSON.generate({:type => :status, :body => msg}) + "---\n"
+  end
+
+
+  def map_group_id(old_group_id)
+    case old_group_id
+    when "1"
+      %w(repository-managers repository-project-managers)
+    when "2"
+      %w(repository-advanced-data-entry)
+    when "3"
+      %w(repository-basic-data-entry)
+    when "4"
+      %w(repository-viewers)
+    end
+  end
+
+
+  def migrate_repository(archon_repo_id, aspace_repo_uri)
+
+    emit_status("Migrating Repository #{archon_repo_id}")
+    repo_id = aspace_repo_uri.sub(/.*\//,'')
+
+    @archivesspace.repo(repo_id).import(@y) do |batch|
+
+      # Classifications
+      Archon.record_type(:classification).each do |rec|
+        rec.class.transform(rec) do |obj|
+          # set the creator (can't do this now; aspace issue
+          # creator_uri = @import_map[rec.import_id]
+          # obj.creator = {'ref' => creator_uri}
+          batch << obj
+        end
+      end
+
+      # Accessions
+      if archon_repo_id = @args[:default_repository]
+        Archon.record_type(:accession).each do |rec|
+          # yields agents and accessions, so check type
+          rec.class.transform(rec) do |obj|
+            case obj.jsonmodel_type
+            when 'accession'
+              resolve_ids_to_links(rec, obj)
+            end
+
+            batch << obj
+          end
+        end
+      end
+
+      batch.write!
+      
+      # Collections
+      Archon.record_type(:collection).each do |rec|
+        next unless rec['RepositoryID'] == archon_repo_id
+        rec.class.transform(rec) do |obj|
+
+          resolve_ids_to_links(rec, obj) 
+
+          batch << obj
+
+          # Content records
+          container_trees = {}
+
+          Archon.record_type(:content).set(rec["ID"]).each do |rec|
+            rec.class.transform(rec) do |obj_or_cont|
+              if obj_or_cont.is_a?(Array)
+                unless container_trees.has_key?(obj_or_cont[0])
+                  container_trees[obj_or_cont[0]] = []
+                end
+                container_trees[obj_or_cont[0]] << obj_or_cont[1]
+              else
+                resolve_ids_to_links(rec, obj_or_cont)
+                batch << obj_or_cont
+              end
+            end
+          end
+
+          apply_container_trees(batch, container_trees)
+        end
+      end
+    end
+  end
+
+
+  def apply_container_trees(batch, container_trees)
+    batch.each do |obj|
+      next unless obj.jsonmodel_type == 'archival_object'
+      container_data = (container_trees[obj.key] || [])
+      cd = ancestor_containers(obj, batch, container_trees, container_data)
+
+      if cd.count > 3
+        $log.debug("Container Data: #{cd.inspect}")
+        raise "Container tree too big for ASpace"
+      end
+
+      unless cd.empty?
+        container = ASpaceImport.JSONModel(:container).new
+        cd.each_with_index do |data, i|
+          container.send("type_#{i+1}=", (data[:type] || "unknown"))
+          container.send("indicator_#{i+1}=", data[:indicator])
+        end
+        
+        instance = ASpaceImport.JSONModel(:instance).new
+        instance.container = container
+        instance.instance_type = 'text'
+
+        obj.instances << instance
+      end
+    end
+  end
+
+
+  def migrate_creators_and_subjects
+    import_map = @archivesspace.import(@y) do |batch|
+      [
+       :subject,
+       :creator
+      ].each do |key|
+      
+        Archon.record_type(key).each do |rec|
+          $log.debug("Migrating Record: #{rec.inspect}")
+          rec.class.transform(rec) do |obj|
+            batch << obj
+          end
+        end
+      end
+    end
+
+    import_map
+  end
+end
+
+
+class MigrationLog
+
+  def initialize(y, syslog)
+    @y = y
+    @syslog = syslog
+  end
+
+
+  def method_missing(method, *args)
+    @syslog.send(method, *args)
+  end
+
+
+  def warn(warning)
+    unless warning =~ /explicitly cleared from the cache/
+      @y << JSON.generate({:type => :warning, :body => warning}) + "---\n"
+    end
+    @syslog.warn(warning)
   end
 end
