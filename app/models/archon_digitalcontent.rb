@@ -21,6 +21,8 @@ Archon.record_type(:digitalcontent) do
                   
                 })
 
+    obj.uri = obj.class.uri_for(rec.import_id)
+
     {
       'Scope' => 'summary',
       'PhysicalDescription' => 'physical_description',

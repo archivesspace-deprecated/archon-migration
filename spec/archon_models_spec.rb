@@ -897,4 +897,26 @@ describe "Archon record mappings" do
     end
   end
 
+
+  describe "Archon Digital File" do
+    before(:all) do
+      @rec = Archon.record_type(:digitalfile).find(1)
+      @obj = @rec.class.to_digital_object_component(@rec)
+    end
+
+
+    it "maps 'Title' to digital_object_component.label" do
+      @obj.label.should eq(@rec['Title'])
+    end
+
+
+    it "lets a user set a base_url for file_version.file_uri" do
+      base = "http://example.com"
+      @rec.class.base_uri = base
+      new_obj = @rec.class.to_digital_object_component(@rec)
+      new_obj.file_versions[0]['file_uri'].should match(Regexp.new(base))
+    end
+
+  end
+
 end

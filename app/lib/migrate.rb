@@ -17,6 +17,9 @@ class MigrationJob
     @args[:aspace_password] ||= Appdata.default_aspace_password
 
     @args[:default_repository] ||= '1'
+    @args[:do_baseurl] ||= 'http://example.com'
+
+    Archon.record_type(:digitalfile).base_url = @args[:do_baseurl]
 
     # 1 job per thread
     raise "Job thread occupied." if Thread.current[:archon_migration_job]
@@ -107,10 +110,13 @@ class MigrationJob
     # 3: Global scope objects
     @import_map = migrate_creators_and_subjects
 
-    # Iterate through repositories
+    # 4: Iterate through repositories
     @repo_map.each do |archon_repo_id, aspace_repo_uri|
       migrate_repository(archon_repo_id, aspace_repo_uri)
     end
+
+    # 5: Package Digital File content for Download
+    #package_digital_files
   end
 
 
@@ -193,7 +199,7 @@ class MigrationJob
       end
 
       # Accessions
-      if archon_repo_id = @args[:default_repository]
+      if archon_repo_id == @args[:default_repository]
         Archon.record_type(:accession).each do |rec|
           # yields agents and accessions, so check type
           rec.class.transform(rec) do |obj|
@@ -236,8 +242,11 @@ class MigrationJob
 
           apply_container_trees(batch, container_trees)
 
+          digital_object_archon_ids = []
           Archon.record_type(:digitalcontent).each do |digital_rec|
             next unless digital_rec['CollectionID'] == rec['ID']            
+            digital_object_archon_ids << rec['ID']
+
             digital_rec.class.transform(digital_rec) do |obj|
               resolve_ids_to_links(digital_rec, obj)
               batch << obj
@@ -255,6 +264,15 @@ class MigrationJob
               end
             end
           end
+
+          Archon.record_type(:digitalfile).each do |rec|
+            next unless digital_object_archon_ids.include?(rec['DigitalContentID'])
+            
+            rec.class.transform(rec) do |obj|
+              batch << obj
+            end
+          end
+
         end
       end
     end
@@ -317,6 +335,17 @@ class MigrationJob
     end
 
     import_map
+  end
+
+
+  def package_digital_files
+    Archon.record_type(:digitalfile).each do |df|
+      bitstream_endpoint = "/?p=core/digitalfileblob&fileid=#{df['ID']}"
+      filepath = Tempfile.new(filename, Dir.tmpdir + "/archon_bitstreams" + df['Filename'])
+      
+      @archon.download_bitstream(endpoint, filepath)
+    end
+
   end
 end
 

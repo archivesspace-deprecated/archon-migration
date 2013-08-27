@@ -106,6 +106,13 @@ describe "Migration" do
     diginst.should_not be_nil
   end
 
+
+  it "maps DigitalFile records to digital_object_component and links them" do
+    digital_object_component = find(:digital_object_component, 1)
+    digital_object = find(:digital_object, 1)
+    digital_object_component.digital_object['ref'].should eq(digital_object.uri)
+  end
+
 end
     
 

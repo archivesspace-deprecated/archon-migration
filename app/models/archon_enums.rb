@@ -3,6 +3,7 @@
  :subjectsource,
  :creatorsource,
  :extentunit,
+ :filetype,
  :materialtype,
  :containertype,
  :processingpriority 
