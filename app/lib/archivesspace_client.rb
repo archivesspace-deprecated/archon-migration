@@ -161,7 +161,11 @@ module ArchivesSpace
 
 
     def normalize_message(message)
-      if message['saved']
+      if message['errors'] && message['errors'].is_a?(Array)
+        message['errors'].each do |error|
+          yield ({:type => 'error', :source => 'aspace', :body => error})
+        end
+      elsif message['saved'] && message['saved'].is_a?(Hash)
         r = {
           :type => 'status',
           :source => 'aspace',
