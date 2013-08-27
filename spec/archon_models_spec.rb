@@ -70,6 +70,17 @@ describe "Archon record mappings" do
   end
 
 
+  shared_examples "a content record with title and date" do
+    it "maps 'Date' to *.dates[0].expression" do
+      object.dates[0]['expression'].should eq(record['Date'])
+    end
+
+    it "maps 'Title' to *.title" do
+      object.title.should eq(record['Title'])
+    end
+  end
+
+
   describe "Users" do
     before :all do
 
@@ -771,10 +782,9 @@ describe "Archon record mappings" do
     end
 
 
-    it "maps 'Title' to aa.title" do
-      @rec.class.transform(change(@rec, {'ContentType' => '1'})) do |obj|        
-        obj.title.should eq(@rec['Title'])
-      end
+    it_behaves_like "a content record with title and date" do
+      let (:object) { t(@rec) }
+      let (:record) { @rec }
     end
 
 
@@ -815,11 +825,6 @@ describe "Archon record mappings" do
     end
 
 
-    it "maps 'Date' to dates[0].expression" do
-      @obj.dates[0]['expression'].should eq(@rec['Date'])
-    end
-
-
     it "maps 'Description' to 'scopecontent' note_multipart" do
       n = get_notes_by_type(@obj, 'scopecontent')[0]
       n.subnotes[0]['content'].should eq(@rec['Description'])
@@ -844,4 +849,52 @@ describe "Archon record mappings" do
       end
     end
   end
+
+  describe "Archon Digital Content" do
+    
+    before(:all) do
+      @rec = Archon.record_type(:digitalcontent).find(1)
+      @obj = @rec.class.to_digital_object(@rec)
+    end
+
+
+    it_behaves_like "a content record with title and date" do
+      let (:object) { @obj }
+      let (:record) { @rec }
+    end
+
+    it "maps 'ID' to *.external_ids[]" do
+      @obj.external_ids[0]['external_id'].should eq(@rec['ID'])
+    end
+
+
+    it "maps 'Identifier' to *.digital_object_id" do
+      @obj.digital_object_id.should eq(@rec['Identifier'])
+    end
+
+
+    it "maps 'Title' to *.title" do
+      @obj.title.should eq(@rec['Title'])
+    end
+
+    {
+      'Scope' => 'summary',
+      'PhysicalDescription' => 'physical_description',
+      'Publisher' => 'other_unmapped',
+      'Contributor' => 'note',
+      'RightsStatement' => 'userestrict',
+    }.each do |field, note_type|
+      it "maps #{field} to *.note_digital_object[type=#{note_type}]" do
+        prefix = %w(Publisher Contributor).include?(field) ? "#{field}: " : ""
+        notes = get_notes_by_type(@obj, note_type)
+        notes[0]['content'][0].should eq(prefix + @rec[field])
+      end
+    end
+
+
+    it "maps 'ContentURL' to *.file_versions[0]['file_uri']" do
+      @obj.file_versions[0]['file_uri'].should eq(@rec['ContentURL'])
+    end
+  end
+
 end

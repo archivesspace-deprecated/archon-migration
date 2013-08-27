@@ -207,38 +207,68 @@ class MigrationJob
         end
       end
 
-      batch.write!
-      
       # Collections
       Archon.record_type(:collection).each do |rec|
+        batch.write!
         next unless rec['RepositoryID'] == archon_repo_id
-        rec.class.transform(rec) do |obj|
+        rec.class.transform(rec) do |coll_obj|
 
-          resolve_ids_to_links(rec, obj) 
+          resolve_ids_to_links(rec, coll_obj) 
 
-          batch << obj
+          batch << coll_obj
 
           # Content records
           container_trees = {}
 
-          Archon.record_type(:content).set(rec["ID"]).each do |rec|
-            rec.class.transform(rec) do |obj_or_cont|
+          Archon.record_type(:content).set(rec["ID"]).each do |content_rec|
+            content_rec.class.transform(content_rec) do |obj_or_cont|
               if obj_or_cont.is_a?(Array)
                 unless container_trees.has_key?(obj_or_cont[0])
                   container_trees[obj_or_cont[0]] = []
                 end
                 container_trees[obj_or_cont[0]] << obj_or_cont[1]
               else
-                resolve_ids_to_links(rec, obj_or_cont)
+                resolve_ids_to_links(content_rec, obj_or_cont)
                 batch << obj_or_cont
               end
             end
           end
 
           apply_container_trees(batch, container_trees)
+
+          Archon.record_type(:digitalcontent).each do |digital_rec|
+            next unless digital_rec['CollectionID'] == rec['ID']            
+            digital_rec.class.transform(digital_rec) do |obj|
+              resolve_ids_to_links(digital_rec, obj)
+              batch << obj
+
+              if digital_rec['CollectionContentID']
+                content_obj = batch.find{|o| o.key == digital_rec['CollectionContentID'] && o.jsonmodel_type == 'archival_object'}
+
+                if content_obj
+                  associate_digital_instance(content_obj, obj)
+                else
+                  $log.warn("Failed to find an archival_object record")
+                end
+              else
+                associate_digital_instance(coll_obj, obj)
+              end
+            end
+          end
         end
       end
     end
+  end
+
+
+  def associate_digital_instance(archival_object, digital_object)
+    instance = ASpaceImport.JSONModel(:instance).new
+    instance.instance_type = 'digital_object'
+    instance.digital_object = {
+      :ref => digital_object.uri
+    }
+
+    archival_object.instances << instance
   end
 
 

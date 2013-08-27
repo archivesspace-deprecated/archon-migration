@@ -23,6 +23,8 @@ describe "Migration" do
 
     @a1 = find(:accession, 1, "resolve[]" => ['classification', 'linked_agents', 'subjects'])
 
+    @d1 = find(:digital_object, 1, "resolve[]" => ['linked_agents', 'subjects'])
+
   end
 
   def find(type, id, opts={})
@@ -90,6 +92,18 @@ describe "Migration" do
   it "maps ids in Content:Subjects to linked subjects" do
     ao = find(:archival_object, 1)
     ao.subjects.length.should eq(7)
+  end
+
+
+  it "maps ids in DigitalContent:Subjects to linked subjects" do
+    @d1.subjects.length.should eq(7)
+  end
+
+
+  it "maps digital_object records into archival_object instance subrecords" do
+    ao = find(:archival_object, 1)
+    diginst = ao.instances.find {|i| i['instance_type'] == 'digital_object'}
+    diginst.should_not be_nil
   end
 
 end
