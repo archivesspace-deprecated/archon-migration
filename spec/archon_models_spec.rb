@@ -135,6 +135,18 @@ describe "Archon record mappings" do
       results = transform(Archon.record_type(:user), data)
       results.length.should eq(0)
     end
+
+
+    it "uses 'Login' as a fallback for user.name" do
+      data = @rec.instance_variable_get(:@data).clone
+      data['DisplayName'] = nil
+
+      rec = Archon.record_type(:user).new(data)
+      obj = rec.class.to_obj(rec)
+
+      obj.name.should_not be_nil
+      obj.name.should eq(rec['Login'])
+    end
   end
 
 

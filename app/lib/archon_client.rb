@@ -188,6 +188,11 @@ module Archon
 
 
     def self.transform(rec)
+      to_obj(rec)
+    end
+
+
+    def self.to_obj(rec)
       if @aspace_record_type
         obj = ASpaceImport.JSONModel(@aspace_record_type).new
         if obj.respond_to?(:uri) && rec.import_id

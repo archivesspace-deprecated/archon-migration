@@ -16,6 +16,7 @@ module GenericArchivalObject
                                               :ref => location.uri
                                             })
 
+      # n.b. aspace backend bug
       container_location.jsonmodel_type = nil
 
       container = self.class.model(:container,
