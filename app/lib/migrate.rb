@@ -99,7 +99,7 @@ class MigrationJob
           my_groups << "/repositories/1/groups/1"
         end        
 
-        my_repos = rec["RepositoryLimit"] == "1" ? @repo_map.reject{|k,v| rec!["Repositories"].include?(k)} : @repo_map
+        my_repos = rec["RepositoryLimit"] == "1" ? @repo_map.reject{|k,v| rec["Repositories"].include?(k)} : @repo_map
 
         my_repos.each do |archon_id, aspace_uri|
           all_groups = @archivesspace.get_json("#{aspace_uri}/groups")
