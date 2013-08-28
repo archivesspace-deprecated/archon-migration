@@ -45,16 +45,24 @@ describe "Archon Client" do
 
 
   it "can fetch a digital file bitstream" do
-    df = Archon.record_type(:digitalfile)
     bitstream = @client.get_bitstream('/?p=core/digitalfileblob&fileid=1')
     bitstream[0,4].should eq("\xff\xd8\xff\xe0")
+  end
+
+
+  it "can save a bitstream to a file" do
+    file = @client.download_bitstream('/?p=core/digitalfileblob&fileid=1', "tmp")
+    file.should_not be_nil
+    file.close
+    file.open
+    bitstream = file.read
+    bitstream[0,4].to_s.should eq("\xff\xd8\xff\xe0")
   end
 
 
   it "can iterate over content records in a collection" do
     ids = []
     Archon.record_type(:content).set("1").each do |rec|
-      p rec
       ids << rec['ID']
     end
     ids.count.should eq(12)

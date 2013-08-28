@@ -8,6 +8,7 @@ $(document).ready(function(){
     },
     success:      function(responseText, statusText, xhr, $form){
       $('#start-migration').toggleClass('pure-button-disabled');
+      $('#download-files').toggleClass('pure-button-disabled');
     },
     xhr:          function(){
       var xhr = new XMLHttpRequest();

@@ -279,7 +279,7 @@ module Archon
       req = Net::HTTP::Get.new(uri.request_uri)
       response = http_request(uri, req)
       $log.debug("Raw Archon response : #{response.inspect}")
-      $log.debug("BODY: #{response.body}")
+#      $log.debug("BODY: #{response.body}")
       if response.code != '200'
         raise "ERROR Getting JSON #{response.inspect}"
       else
@@ -313,6 +313,29 @@ module Archon
     end
 
 
+    def download_bitstream(endpoint, filepath)
+      
+      uri = URI.parse("#{@url}#{endpoint}")
+      $log.debug("Prepare Archon request: #{uri.request_uri}")
+
+      req = Net::HTTP::Get.new(uri.request_uri)
+      http_request(uri, req) do |response|
+        if response.code != '200'
+          raise "ERROR Getting bitstream #{response.inspect}"
+        else
+          begin
+            file = File.open(filepath, "w")
+            response.read_body do |chunk|
+              file.write(chunk)
+            end
+          ensure
+            file.close unless file.nil?
+          end
+        end
+      end
+    end
+      
+
     def http_request(uri, req, &block)
       session = current_archon_session
 
@@ -320,7 +343,7 @@ module Archon
       req['COOKIE'] = "archon=#{session}"
 
       req.basic_auth("admin", "admin")
-      response = http.request(uri, req)
+      response = http.request(uri, req, &block)
 
       response
     end
