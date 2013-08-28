@@ -113,6 +113,14 @@ describe "Migration" do
     digital_object_component.digital_object['ref'].should eq(digital_object.uri)
   end
 
+
+  it "links locations to accessions in its roundabout way" do
+    accession = find(:accession, 1)
+    location = find(:location, 1)
+
+    ref = accession.instances[0]['container']['container_locations'][0]['ref']
+    ref.should eq(location.uri)
+  end
 end
     
 

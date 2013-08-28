@@ -47,4 +47,6 @@ Appdata.default_aspace_user             'admin'
 Appdata.default_aspace_password         'admin'
 
 
-
+if File.exists?(File.join(File.dirname(__FILE__), 'config_local.rb'))
+  require_relative('config_local.rb')
+end

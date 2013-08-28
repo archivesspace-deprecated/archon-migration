@@ -59,14 +59,27 @@ describe "Archon record mappings" do
   shared_examples "archival object location mappings" do
     
     it "creates an instance for each item in 'Locations'" do
-      object.instances.count.should eq(record['Locations'].count)
+      instances = []
+      record.tap_locations do |location, instance|
+        instances << instance
+        linked = instances.last['container']['container_locations'][0]
+        linked['ref'].should eq(location.uri)
+        linked['status'].should eq('current')
+      end
+
+      instances.count.should eq(record['Locations'].count)
     end
 
     it "maps 'Content' to instances[].container.indicator_1" do
-      content = record['Locations'][0]['Content']
-      object.instances[0]['container']['indicator_1'].should eq(content)
-    end
+      instances = []
+      record.tap_locations do |location, instance|
+        instances << instance
+      end
 
+      cont = instances.map{|inst| inst['container']['indicator_1']}.sort
+
+      cont.should eq(record['Locations'].map{|loc| loc['Content']}.sort)
+    end
   end
 
 
@@ -912,7 +925,7 @@ describe "Archon record mappings" do
 
     it "lets a user set a base_url for file_version.file_uri" do
       base = "http://example.com"
-      @rec.class.base_uri = base
+      @rec.class.base_url = base
       new_obj = @rec.class.to_digital_object_component(@rec)
       new_obj.file_versions[0]['file_uri'].should match(Regexp.new(base))
     end

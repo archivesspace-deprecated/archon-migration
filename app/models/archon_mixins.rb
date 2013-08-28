@@ -4,6 +4,39 @@ module GenericArchivalObject
   end
 
 
+  def tap_locations
+    self['Locations'].each do |loc|
+      location = self.class.transform_location(loc)
+
+
+      container_location = self.class.model(:container_location,
+                                            {
+                                              :status => 'current',
+                                              :start_date => '1999-12-31',
+                                              :ref => location.uri
+                                            })
+
+      container_location.jsonmodel_type = nil
+
+      container = self.class.model(:container,
+                        {
+                          :type_1 => 'other',
+                          :indicator_1 => loc['Content'],
+                          :container_locations => [container_location]
+                        })
+
+      instance = self.class.model(:instance,
+                        {
+                          :container => container,
+                          :instance_type => 'text'
+                        })
+
+      yield location, instance
+    end
+  end
+
+
+
   module ClassMethods
 
     def transform(rec)
@@ -14,36 +47,23 @@ module GenericArchivalObject
         obj.resource_type = type ? type['MaterialType'] : unspecified("unknown")
       end
 
-      rec['Locations'].each do |loc|
-        location = model(:location,
-                         {
-                           :coordinate_1_indicator => loc['RangeValue'],
-                           :coordinate_1_label => 'Range',
-                           :coordinate_2_indicator => loc['Section'],
-                           :coordinate_2_label => 'Section',
-                           :coordinate_3_indicator => loc['Shelf'],
-                           :coordinate_3_label => 'Shelf',
-                           :building => loc['Location']
-                         })
-
-        container = model(:container,
-                          {
-                            :type_1 => 'other',
-                            :indicator_1 => loc['Content'],
-                            :locations => [location]
-                          })
-
-        obj.instances << model(:instance,
-                               {
-                                 :container => container,
-                                 :instance_type => 'text'
-
-                               })
-      end
-
-
       obj
     end
 
+ 
+    def transform_location(loc)
+      obj = model(:location,
+                  {
+                    :building => loc['Location'],
+                    :coordinate_1_indicator => loc['RangeValue'],
+                    :coordinate_2_indicator => loc['Section'],
+                    :coordinate_3_indicator => loc['Shelf'],
+                    :coordinate_1_label => 'Range',
+                    :coordinate_2_label => 'Section',
+                    :coordinate_3_label => 'Shelf',
+                  })
+
+      obj
+    end
   end
 end

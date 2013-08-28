@@ -1,6 +1,7 @@
 require_relative 'startup'
 require_relative 'archon_client'
 require_relative 'archivesspace_client'
+require 'zip/zip'
 
 
 class MigrationJob
@@ -39,6 +40,17 @@ class MigrationJob
                                  :password => @args[:archon_password]
                                  )
     @unmigrated_records = {}
+
+    unless File.exists?(Dir.tmpdir + "/archon_bitstreams")
+      Dir.mkdir(Dir.tmpdir + "/archon_bitstreams") 
+    end
+    FileUtils.rm_rf(Dir.glob(Dir.tmpdir + "/archon_bitstreams/*"))
+
+    download_path = File.join(File.dirname(__FILE__), '../', 'public', 'bitstreams.zip')
+
+    if File.exists?(download_path)
+      FileUtils.rm_rf(download_path)
+    end
 
   end
 
@@ -116,7 +128,7 @@ class MigrationJob
     end
 
     # 5: Package Digital File content for Download
-    #package_digital_files
+    package_digital_files
   end
 
 
@@ -203,9 +215,13 @@ class MigrationJob
         Archon.record_type(:accession).each do |rec|
           # yields agents and accessions, so check type
           rec.class.transform(rec) do |obj|
-            case obj.jsonmodel_type
-            when 'accession'
+
+            if obj.jsonmodel_type == 'accession'
               resolve_ids_to_links(rec, obj)
+              rec.tap_locations do |location, instance|
+                batch << location
+                obj.instances << instance
+              end
             end
 
             batch << obj
@@ -217,65 +233,85 @@ class MigrationJob
       Archon.record_type(:collection).each do |rec|
         batch.write!
         next unless rec['RepositoryID'] == archon_repo_id
-        rec.class.transform(rec) do |coll_obj|
+        rec.class.transform(rec) do |obj|
 
-          resolve_ids_to_links(rec, coll_obj) 
-
-          batch << coll_obj
-
-          # Content records
-          container_trees = {}
-
-          Archon.record_type(:content).set(rec["ID"]).each do |content_rec|
-            content_rec.class.transform(content_rec) do |obj_or_cont|
-              if obj_or_cont.is_a?(Array)
-                unless container_trees.has_key?(obj_or_cont[0])
-                  container_trees[obj_or_cont[0]] = []
-                end
-                container_trees[obj_or_cont[0]] << obj_or_cont[1]
-              else
-                resolve_ids_to_links(content_rec, obj_or_cont)
-                batch << obj_or_cont
-              end
+          if obj.jsonmodel_type == 'resource'
+            resolve_ids_to_links(rec, obj)            
+            rec.tap_locations do |location, instance|
+              batch << location
+              obj.instances << instance
             end
+
+            process_resource_tree(batch, rec, obj) 
           end
 
-          apply_container_trees(batch, container_trees)
-
-          digital_object_archon_ids = []
-          Archon.record_type(:digitalcontent).each do |digital_rec|
-            next unless digital_rec['CollectionID'] == rec['ID']            
-            digital_object_archon_ids << rec['ID']
-
-            digital_rec.class.transform(digital_rec) do |obj|
-              resolve_ids_to_links(digital_rec, obj)
-              batch << obj
-
-              if digital_rec['CollectionContentID']
-                content_obj = batch.find{|o| o.key == digital_rec['CollectionContentID'] && o.jsonmodel_type == 'archival_object'}
-
-                if content_obj
-                  associate_digital_instance(content_obj, obj)
-                else
-                  $log.warn("Failed to find an archival_object record")
-                end
-              else
-                associate_digital_instance(coll_obj, obj)
-              end
-            end
-          end
-
-          Archon.record_type(:digitalfile).each do |rec|
-            next unless digital_object_archon_ids.include?(rec['DigitalContentID'])
-            
-            rec.class.transform(rec) do |obj|
-              batch << obj
-            end
-          end
-
+          batch << obj
         end
       end
     end
+  end
+
+
+  def process_resource_tree(batch, rec, coll_obj)
+    # Content records
+    container_trees = {}
+
+    Archon.record_type(:content).set(rec["ID"]).each do |content_rec|
+      content_rec.class.transform(content_rec) do |obj_or_cont|
+        if obj_or_cont.is_a?(Array)
+          unless container_trees.has_key?(obj_or_cont[0])
+            container_trees[obj_or_cont[0]] = []
+          end
+          container_trees[obj_or_cont[0]] << obj_or_cont[1]
+        else
+          resolve_ids_to_links(content_rec, obj_or_cont)
+          batch << obj_or_cont
+        end
+      end
+    end
+
+    apply_container_trees(batch, container_trees)
+
+    digital_object_archon_ids = []
+    Archon.record_type(:digitalcontent).each do |digital_rec|
+      next unless digital_rec['CollectionID'] == rec['ID']            
+      digital_object_archon_ids << rec['ID']
+
+      digital_rec.class.transform(digital_rec) do |obj|
+        resolve_ids_to_links(digital_rec, obj)
+        batch << obj
+
+        if digital_rec['CollectionContentID']
+          content_obj = batch.find{|o| o.key == digital_rec['CollectionContentID'] && o.jsonmodel_type == 'archival_object'}
+
+          if content_obj
+            associate_digital_instance(content_obj, obj)
+          else
+            $log.warn("Failed to find an archival_object record")
+          end
+        else
+          associate_digital_instance(coll_obj, obj)
+        end
+      end
+    end
+
+    Archon.record_type(:digitalfile).each do |rec|
+      next unless digital_object_archon_ids.include?(rec['DigitalContentID'])
+      
+      extract_bitstream(rec)
+
+      rec.class.transform(rec) do |obj|
+        batch << obj
+      end
+    end
+  end
+
+
+  def extract_bitstream(rec)
+    endpoint = "/?p=core/digitalfileblob&fileid=#{rec['ID']}"
+#    filepath = Tempfile.new(rec['Filename'], Dir.tmpdir + "/archon_bitstreams/")
+    filepath = File.new(Dir.tmpdir + "/archon_bitstreams/" + rec['Filename'], 'w')
+    @archon.download_bitstream(endpoint, filepath)
   end
 
 
@@ -339,13 +375,15 @@ class MigrationJob
 
 
   def package_digital_files
-    Archon.record_type(:digitalfile).each do |df|
-      bitstream_endpoint = "/?p=core/digitalfileblob&fileid=#{df['ID']}"
-      filepath = Tempfile.new(filename, Dir.tmpdir + "/archon_bitstreams" + df['Filename'])
-      
-      @archon.download_bitstream(endpoint, filepath)
+    directory = Dir.tmpdir + "/archon_bitstreams/"
+#    zipfile_name = File.expand_path('bitstreams.zip', settings.public)
+    zipfile_name = File.join(File.dirname(__FILE__), '../', 'public', 'bitstreams.zip')
+   
+    Zip::ZipFile.open(zipfile_name, Zip::ZipFile::CREATE) do |zipfile|
+      Dir.glob("#{directory}*.*").each do |file|
+        zipfile.add(file.sub(directory, ''), file)
+      end
     end
-
   end
 end
 
