@@ -21,8 +21,8 @@ end
 
 
 Appdata.parameter :aspace_version, 
-									:port_number,
-					        :default_archon_url,
+                  :port_number,
+                  :default_archon_url,
                   :default_archon_user,
                   :default_archon_password,
                   :default_aspace_url,
