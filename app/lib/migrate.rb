@@ -419,9 +419,11 @@ class MigrationLog
 
   def warn(warning)
     unless warning =~ /explicitly cleared from the cache/
-      w = "#{warning[0,100]}...see log"
-      @y << JSON.generate({:type => :warning, :body => w}) + "---\n"
+      unless Appdata.mode == :server
+        w = "#{warning[0,100]}...see log"
+        @y << JSON.generate({:type => :warning, :body => w}) + "---\n"
+      end
+      @syslog.warn(warning)
     end
-    @syslog.warn(warning)
   end
 end

@@ -4,6 +4,9 @@ require 'sinatra/assetpack'
 require_relative 'lib/startup'
 require_relative 'lib/migrate'
 
+Appdata.mode = :server
+Appdata.app_dir = File.dirname(__FILE__)
+
 set :port, Appdata.port_number
 set :root, File.dirname(__FILE__)
 set :show_exceptions, :after_handler
@@ -48,7 +51,7 @@ post '/jobs' do
 
   Enumerator.new do |y|
     begin
-      $syslog = $log
+      $syslog = Logger.new(Appdata.app_dir + "/public/log.txt")
       $log = MigrationLog.new(y, $syslog)
       m = MigrationJob.new(params[:job])
       m.migrate(y)
@@ -60,6 +63,7 @@ post '/jobs' do
       y << JSON.generate({:type => :error, :body => body}) + "---\n"
     rescue Exception => e
       $log.debug("Server Error: "+e.to_s)
+      $log.debug(e.backtrace)
       y << JSON.generate({:type => :error, :body => e.to_s}) + "---\n"
     ensure
       $log = $syslog

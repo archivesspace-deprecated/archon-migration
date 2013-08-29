@@ -197,6 +197,13 @@ module ArchivesSpace
               :id => status['id']
             }
             yield r
+          elsif status['type'] = 'refresh'
+            r = {
+              :type => 'progress-message',
+              :source => 'migration',
+              :body => status['label'],
+            }
+            yield r
           end
         end
       elsif message['ticks']

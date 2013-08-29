@@ -27,8 +27,9 @@ Appdata.parameter :aspace_version,
                   :default_archon_password,
                   :default_aspace_url,
                   :default_aspace_user,
-                  :default_aspace_password
-
+                  :default_aspace_password,
+                  :mode,
+                  :app_dir
 
 Appdata.aspace_version                  'v0.6.2'
 
@@ -45,7 +46,6 @@ Appdata.default_aspace_url              'http://localhost:4567'
 Appdata.default_aspace_user             'admin'
 
 Appdata.default_aspace_password         'admin'
-
 
 if File.exists?(File.join(File.dirname(__FILE__), 'config_local.rb'))
   require_relative('config_local.rb')

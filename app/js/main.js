@@ -5,10 +5,12 @@ $(document).ready(function(){
       $form.validate();
       $('#start-migration').toggleClass('pure-button-disabled');
       $('#status-console').empty();
+//      $('#status-console').append("<progress></progress>");
     },
     success:      function(responseText, statusText, xhr, $form){
       $('#start-migration').toggleClass('pure-button-disabled');
       $('#download-files').toggleClass('pure-button-disabled');
+      $('#download-log').toggleClass('pure-button-disabled');
     },
     xhr:          function(){
       var xhr = new XMLHttpRequest();
@@ -36,7 +38,11 @@ function updateStatus(update, emitter){
     } else if (update.type == 'status') {
       emitter.refresh_status(update.body, update.source);
     } else if (update.type == 'warning') {
-      emitter.show_warning(update.body)
+      emitter.show_warning(update.body);
+    } else if (update.type == 'progress') {
+      emitter.show_progress(update.ticks, update.total);
+    } else if (update.type == 'progress-message') {
+      emitter.show_progress_message(update.body);
     } else {
       // todo: toggle in progress bar
     }
@@ -47,16 +53,28 @@ function StatusEmitter() {
   var console = $('#status-console');
 
   this.refresh_status = function(status, source){
-    console.append("<p class=\"" + source + "\">"+status+"</p>");
+    $("#status-console p:last .progress").html(' 100%');
+    console.append("<p class=\"status " + source + "\">"+status+"</p>");
   }
 
   this.show_error = function(error){
     console.addClass('error');
-    console.append("<p><b>"+error+"</b></p>");
+    console.append("<p class='error'><b>"+error+"</b></p>");
   }
 
   this.show_warning = function(warning){
     console.append("<p class='warn'>" + warning + "</p>");
+  }
+
+  this.show_progress = function(ticks, total) {
+    var percent = Math.round((ticks / total) * 100);
+    $("#status-console p:last .progress").remove();
+    $("#status-console p:last").append("<span class='progress'> " + percent + "%</span>");
+  }
+
+  this.show_progress_message = function(body) {
+    $("#status-console p:last .progress-message").remove();
+    $("#status-console p:last").append("<span class='progress-message'> - " + body + "</span>");
   }
 }
 
