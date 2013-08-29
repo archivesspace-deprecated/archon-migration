@@ -8,17 +8,32 @@ Archon.record_type(:collection) do
   def self.transform(rec)
     obj = super
 
+    raise obj if obj.id_0
+
+    obj.key = rec['ID']
     obj.level = 'collection'
     obj.title = rec['Title']
 
     c = Archon.record_type(:classification).find(rec['ClassificationID'])
-    c_uri = ASpaceImport.JSONModel(c.aspace_type).uri_for(c.import_id)
-    obj.classification = {:ref => c_uri}
+    if c.nil?
+      $log.warn(%{Archon Collection record has '#{rec['ClassificationID']}' for its ClassificationID foreign key, but no such record exists. The Archon record id is '#{rec['ID']}'. Assigning a random ID to the ArchivesSpace resource.})
 
-    ids = c.resource_identifiers
+      ids = []
+    else
+      c_uri = ASpaceImport.JSONModel(c.aspace_type).uri_for(c.import_id)
+      obj.classification = {:ref => c_uri}
+      ids = c.resource_identifiers
+    end
+
+    max = rec['CollectionIdentifier'] ? 3 : 4
+    while ids.length > max
+      rejected = ids.pop
+      $log.warn("Deleting a Classification id (#{rejected}) from the resource. Archon record: #{rec.inspect}")
+    end
+
     i = 0
     ids.each do |id|
-      obj.send("id_#{i}=", id)
+      obj.send("id_#{i}=", id.clone) #TODO: Classification returns clean set
       i += 1
     end
 
@@ -26,9 +41,17 @@ Archon.record_type(:collection) do
       obj.send("id_#{i}=", rec['CollectionIdentifier'])
     end
 
+    if obj.id_0.nil?
+      $log.warn("Couldn't find anything to assign to 'resource.id_0'. Generating a random value. See Archon record #{rec.inspect}")
+#      obj.id_0 = "migration_#{SecureRandom.uuid}"
+      obj.id_0 = ""
+    end
+
+    obj.id_0 << "_#{SecureRandom.uuid}"
+
     extent = model(:extent, 
                    {
-                     :number => rec['Extent'],
+                     :number => (rec['Extent'] ? rec['Extent'].to_s : nil),
                      :extent_type => get_extent_type(rec['ExtentUnitID']),
                      :portion => unspecified('whole')
 
@@ -108,7 +131,7 @@ Archon.record_type(:collection) do
       obj[v] = rec[k]
     end
 
-    if rec['Languages'][0]
+    if rec.has_key?('Languages') && rec['Languages'][0]
       obj.language = rec['Languages'][0]
     end
 

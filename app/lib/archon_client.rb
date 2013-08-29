@@ -114,6 +114,9 @@ module Archon
           end
         elsif result_set.is_a?(Hash)
           result_set.each {|i, rec| yield self.new(rec) }
+        elsif result_set.nil?
+          $log.warn("No results found at: #{endpoint(i)}")
+          break
         else
           raise "Unintelligible data structure #{result_set.inspect}"
         end
@@ -153,7 +156,14 @@ module Archon
 
 
     def self.unfound(id = '0')
-      $log.warn("Couldn't find a #{@type} with the ID: #{id}")
+      loglevel = case @type
+                 when  :subjectsource, :creatorsource, :extentunit, :filetype, :materialtype, :containertype, :processingpriority 
+                   :debug
+                 else
+                   :warn
+                 end
+
+      $log.send(loglevel, "Couldn't find a #{@type} with the ID: #{id}")
       nil
     end
 
@@ -245,7 +255,7 @@ module Archon
         raise "Bad key (#{key}) used to access Archon -#{@type}- data"
       end
       val = @data[key]
-      unless val && val.empty? && val.is_a?(String)
+      unless val && val.to_s.empty? && val.is_a?(String)
         val
       else
         nil

@@ -91,6 +91,7 @@ class MigrationJob
     emit_status("Migrating User records")
 
     Archon.record_type(:user).each do |rec|
+
       rec.class.transform(rec) do |obj|
         my_groups = []
 
@@ -120,6 +121,7 @@ class MigrationJob
 
     emit_status("Migrating Creator and Subject records")
     # 3: Global scope objects
+
     @import_map = migrate_creators_and_subjects
 
     # 4: Iterate through repositories
@@ -128,6 +130,7 @@ class MigrationJob
     end
 
     # 5: Package Digital File content for Download
+    emit_status("Packaging digital files for download")
     package_digital_files
   end
 
@@ -150,10 +153,16 @@ class MigrationJob
   def resolve_ids_to_links(rec, obj)
     rec['Creators'].each do |id|
       import_id = Archon.record_type(:creator).import_id_for(id)
-      obj.linked_agents << {
-        :ref => @import_map[import_id],
-        :role => 'creator'
-      }
+      if @import_map.has_key?(import_id)
+        obj.linked_agents << {
+          :ref => @import_map[import_id],
+          :role => 'creator'
+        }
+      else
+        $log.warn(%{Failed to link an ArchivesSpace #{obj.jsonmodel_type} record
+to an Agent. The matching Archon ID for the #{obj.jsonmodel_type} record is
+#{obj.key} and the matching Archon ID for the agent is #{id}})
+      end
     end
 
 
@@ -231,7 +240,10 @@ class MigrationJob
 
       # Collections
       Archon.record_type(:collection).each do |rec|
+
+        $log.debug("Writing to batch file")
         batch.write!
+        $log.debug("Done writing to batch file")
         next unless rec['RepositoryID'] == archon_repo_id
         rec.class.transform(rec) do |obj|
 
@@ -241,7 +253,7 @@ class MigrationJob
               batch << location
               obj.instances << instance
             end
-
+            $log.debug("process resource tree")
             process_resource_tree(batch, rec, obj) 
           end
 
@@ -252,19 +264,20 @@ class MigrationJob
   end
 
 
-  def process_resource_tree(batch, rec, coll_obj)
-    # Content records
+  def process_resource_tree(batch, collection_rec, coll_obj)
+
+    coll_id = collection_rec['ID']
     container_trees = {}
 
-    Archon.record_type(:content).set(rec["ID"]).each do |content_rec|
-      content_rec.class.transform(content_rec) do |obj_or_cont|
+    Archon.record_type(:content).set(coll_id).each do |rec|
+      rec.class.transform(rec) do |obj_or_cont|
         if obj_or_cont.is_a?(Array)
           unless container_trees.has_key?(obj_or_cont[0])
             container_trees[obj_or_cont[0]] = []
           end
           container_trees[obj_or_cont[0]] << obj_or_cont[1]
         else
-          resolve_ids_to_links(content_rec, obj_or_cont)
+          resolve_ids_to_links(rec, obj_or_cont)
           batch << obj_or_cont
         end
       end
@@ -273,25 +286,27 @@ class MigrationJob
     apply_container_trees(batch, container_trees)
 
     digital_object_archon_ids = []
-    Archon.record_type(:digitalcontent).each do |digital_rec|
-      next unless digital_rec['CollectionID'] == rec['ID']            
+    Archon.record_type(:digitalcontent).each do |rec|
+      next unless rec['CollectionID'] == coll_id            
       digital_object_archon_ids << rec['ID']
 
-      digital_rec.class.transform(digital_rec) do |obj|
-        resolve_ids_to_links(digital_rec, obj)
-        batch << obj
+      rec.class.transform(rec) do |obj|
+        resolve_ids_to_links(rec, obj)
 
-        if digital_rec['CollectionContentID']
-          content_obj = batch.find{|o| o.key == digital_rec['CollectionContentID'] && o.jsonmodel_type == 'archival_object'}
+        if rec['CollectionContentID']
+          content_obj = batch.find{|o| o.key == rec['CollectionContentID'] && o.jsonmodel_type == 'archival_object'}
 
           if content_obj
             associate_digital_instance(content_obj, obj)
           else
-            $log.warn("Failed to find an archival_object record")
+            $log.warn("Failed to find an archival_object record with Archon ID #{rec['CollectionContentID']}")
           end
         else
           associate_digital_instance(coll_obj, obj)
         end
+
+        batch << obj
+        batch.pop
       end
     end
 
@@ -302,6 +317,7 @@ class MigrationJob
 
       rec.class.transform(rec) do |obj|
         batch << obj
+        batch.pop
       end
     end
   end
@@ -403,7 +419,8 @@ class MigrationLog
 
   def warn(warning)
     unless warning =~ /explicitly cleared from the cache/
-      @y << JSON.generate({:type => :warning, :body => warning}) + "---\n"
+      w = "#{warning[0,100]}...see log"
+      @y << JSON.generate({:type => :warning, :body => w}) + "---\n"
     end
     @syslog.warn(warning)
   end

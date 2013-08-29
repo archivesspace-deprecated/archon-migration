@@ -3,6 +3,11 @@ Archon.record_type(:creator) do
 
   def self.transform(rec)
 
+    unless rec.has_key?('ID')
+      $log.warn("Ignoring Archon Creator record: #{self.inspect}")
+      return
+    end
+
     case rec['CreatorTypeID']
     when '19', '21', '23'
       obj =  model(:agent_person).new

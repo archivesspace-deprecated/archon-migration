@@ -97,10 +97,18 @@ module ArchivesSpace
 
 
     def import(y)
+
+      # workaround dumb aspace importer
+      client_block = Proc.new{ |msg| normalize_message(msg) do |normaled|
+          y << json_chunk(normaled)
+        end
+      }
+
       reader = ResponseReader.new
       cache = ASpaceImport::ImportCache.new(
                                             :dry => false,
-                                            :log => $log
+                                            :log => $log,
+                                            :client_block => client_block
                                             )
       save_map = nil
 
@@ -111,8 +119,14 @@ module ArchivesSpace
       # (another workaround of aspace migration tools,
       # this is the only way to confirm the set is empty)
       internal_batch = cache.instance_variable_get(:@batch)
-      seen_records = internal_batch.instance_variable_get(:@seen_records)
-      return {} if cache.empty? && seen_records.empty?
+      # seen_records = internal_batch.instance_variable_get(:@seen_records)
+      working_file = internal_batch.instance_variable_get(:@working_file)
+
+      # if cache.empty? && seen_records.empty?
+      if cache.empty? && working_file.size == 0
+        $log.warn("Empty batch: aborting, not saving")
+        return {} 
+      end
 
       # save the batch
       $log.debug("Posting import batch")

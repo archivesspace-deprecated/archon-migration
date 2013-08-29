@@ -44,9 +44,15 @@ Archon.record_type(:content) do
 
     unless rec['ParentID'] == '0'
       real_parent_id = nearest_non_physical_ancestor(rec['ParentID'])
-      obj.parent = {
-        :ref => obj.class.uri_for(rec.class.import_id_for(real_parent_id))
-      }
+      if real_parent_id.nil?
+        $log.warn(%{Bad foreign key: can't locate the record associated with 'ParentID' in this record: #{rec.inspect}})
+      elsif real_parent_id == '0'
+        $log.warn("An intellectual Content record with a physical Content record as its parent is being placed at the top level of the resource hierarchy")        
+      else
+        obj.parent = {
+          :ref => obj.class.uri_for(rec.class.import_id_for(real_parent_id))
+        }
+      end
     end
 
     resource_id = Archon.record_type(:collection).import_id_for(@cid)
@@ -126,6 +132,11 @@ Archon.record_type(:content) do
       end
     end
 
+    unless obj.title || obj.dates.count > 0
+      $log.warn(%{Assigning a random title to the archival_object record created from Archon record #{rec.inspect}})
+      obj.title = "migration_#{SecureRandom.uuid}"
+    end
+
     obj
   end
 
@@ -145,8 +156,12 @@ Archon.record_type(:content) do
 
   def self.nearest_non_physical_ancestor(parent_id)
     parent = find(parent_id)
+
+    return nil if parent.nil?
+
     if parent['ContentType'] == '2'
-      raise "tree error" if parent['ParentID'] == '0'
+#      raise "tree error" if parent['ParentID'] == '0'
+      return '0' if parent['ParentID'] == '0'
       nearest_non_physical_ancestor(parent['ParentID'])
     else
       parent_id
@@ -155,7 +170,7 @@ Archon.record_type(:content) do
 
 
   def self.determine_note_type(archon_type)
-    case
+    case archon_type
     when "accessrestrict", "accruals", "acqinfo", "altformavail", "appraisal", "arrangement", "bioghist", "custodhist", "dimensions", "originalsloc", "prefercite", "processinfo", "relatedmaterial", "separatedmaterial", "userestrict"
       [:note_multipart, archon_type]
     when "origination", "langmaterial", "note", "unitid", "odd"

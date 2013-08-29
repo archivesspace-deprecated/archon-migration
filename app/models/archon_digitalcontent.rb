@@ -9,13 +9,19 @@ Archon.record_type(:digitalcontent) do
 
 
   def self.to_digital_object(rec)
+    digital_object_id = if rec['Identifier']
+                          rec['Identifier']
+                        else
+                          "Archon ID: #{rec['ID']}"
+                        end
+
     obj = model(:digital_object,
                 {
                   :external_ids => [{
                                       :external_id => rec['ID'],
                                       :source => "archon"
                                     }],
-                  :digital_object_id => rec['Identifier'],
+                  :digital_object_id => digital_object_id,
                   :title => rec['Title'],
                   :publish => (rec['Browsable'] == '1' ? true : false),
                   
@@ -41,12 +47,14 @@ Archon.record_type(:digitalcontent) do
       end
     end
 
-    obj.dates << model(:date,
-                       {
-                         :expression => rec['Date'],
-                         :date_type => 'single',
-                         :label => 'creation'
-                       })
+    if rec['Date']
+      obj.dates << model(:date,
+                         {
+                           :expression => rec['Date'],
+                           :date_type => 'single',
+                           :label => 'creation'
+                         })
+    end
 
     if rec['ContentURL']
 

@@ -5,6 +5,11 @@ module GenericArchivalObject
 
 
   def tap_locations
+    unless self.has_key?('Locations')
+      $log.warn(%{No 'Locations' data found for Archon record: #{self.inspect}})
+      return nil
+    end
+
     self['Locations'].each do |loc|
       location = self.class.transform_location(loc)
 
@@ -53,6 +58,13 @@ module GenericArchivalObject
 
  
     def transform_location(loc)
+
+      # force all data in
+      supp = {}
+      if loc['RangeValue'].nil?
+        supp.merge!(:coordinate_1_indicator => "unkown")
+      end
+
       obj = model(:location,
                   {
                     :building => loc['Location'],
@@ -62,7 +74,8 @@ module GenericArchivalObject
                     :coordinate_1_label => 'Range',
                     :coordinate_2_label => 'Section',
                     :coordinate_3_label => 'Shelf',
-                  })
+                  }.merge(supp)
+                  )
 
       obj
     end

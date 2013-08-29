@@ -80,6 +80,39 @@ describe "Archon record mappings" do
 
       cont.should eq(record['Locations'].map{|loc| loc['Content']}.sort)
     end
+
+
+    it "uses 'Section' for indicator_1 value if 'RangeValue' is missing" do
+      loc = record['Locations'][0].clone
+      loc['RangeValue'] = nil
+
+      obj = record.class.transform_location(loc)
+
+      obj.coordinate_1_indicator.should eq(loc['Section'])
+      obj.coordinate_1_label.should eq('Section')
+      obj.coordinate_2_indicator.should eq(loc['Shelf'])
+    end
+
+
+    it "uses 'Shelf' for indicator_1 if 'RangeValue' and 'Section' are absent" do
+      loc = record['Locations'].clone
+      loc['RangeValue'] = nil
+      loc['Section'] = nil
+
+      obj = record.class.transform_location(loc)
+      obj.coordinate_1_indicator.should eq(loc['Shelf'])
+      obj.coordinate_2_indicator.should be_nil
+    end
+
+
+    it "uses 'not recorded' if no locations values are present" do
+      loc = record['Locations'].clone
+      %w(RangeValue Section Shelf).map {|spot| loc[spot] = nil}
+
+      obj = record.class.transform_location(loc)
+      obj.coordinate_1_indicator.should eq('not recorded')
+    end
+      
   end
 
 
