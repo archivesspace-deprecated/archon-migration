@@ -31,7 +31,6 @@ describe "Archon record mappings" do
 
   def create_test_set(type, fields, template = {})
     data = create_test_hash(fields, template)
-    pp data
     rec = Archon.record_type(type).new(data)
     results = transform(rec.class, data)
 
@@ -95,7 +94,7 @@ describe "Archon record mappings" do
 
 
     it "uses 'Shelf' for indicator_1 if 'RangeValue' and 'Section' are absent" do
-      loc = record['Locations'].clone
+      loc = record['Locations'][0].clone
       loc['RangeValue'] = nil
       loc['Section'] = nil
 
@@ -106,7 +105,7 @@ describe "Archon record mappings" do
 
 
     it "uses 'not recorded' if no locations values are present" do
-      loc = record['Locations'].clone
+      loc = record['Locations'][0].clone
       %w(RangeValue Section Shelf).map {|spot| loc[spot] = nil}
 
       obj = record.class.transform_location(loc)
@@ -900,10 +899,20 @@ describe "Archon record mappings" do
 
 
     it "maps 'Notes' to 'notes'" do
+
       @rec['Notes'].values.each do |note_data|
-        n = get_notes_by_type(@obj, note_data['NoteType'])[-1]
-        n.label.should eq(note_data['Label'])
-        get_note_content(n).should eq(note_data['Content'])
+        note_type = case note_data['NoteType']
+                    when 'origination', 'langmaterial', 'note', 'unitid'
+                      'odd'
+                    when 'extent'
+                      'physdesc'
+                    else
+                      note_data['NoteType']
+                    end
+        nn = get_notes_by_type(@obj, note_type)
+        note = nn.find{|n| n.label == note_data['Label']}
+        note.should_not be_nil
+        get_note_content(note).should eq(note_data['Content'])
       end
     end
   end

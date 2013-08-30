@@ -59,24 +59,25 @@ module GenericArchivalObject
  
     def transform_location(loc)
 
-      # force all data in
-      supp = {}
-      if loc['RangeValue'].nil?
-        supp.merge!(:coordinate_1_indicator => "unkown")
+      obj = model(:location).new
+      obj.building = loc['Location']
+
+      loc_keys = %w(RangeValue Section Shelf)
+      i = 1
+      loc_keys.each do |k|
+        if loc[k]
+          obj["coordinate_#{i}_indicator"] =  loc[k]
+          obj["coordinate_#{i}_label"] = k
+          i += 1
+        end
       end
 
-      obj = model(:location,
-                  {
-                    :building => loc['Location'],
-                    :coordinate_1_indicator => loc['RangeValue'],
-                    :coordinate_2_indicator => loc['Section'],
-                    :coordinate_3_indicator => loc['Shelf'],
-                    :coordinate_1_label => 'Range',
-                    :coordinate_2_label => 'Section',
-                    :coordinate_3_label => 'Shelf',
-                  }.merge(supp)
-                  )
-
+      #fallback
+      unless obj.coordinate_1_indicator
+        obj.coordinate_1_indicator = "not recorded"
+        obj.coordinate_1_label = "RangeValue"
+      end
+      
       obj
     end
   end
