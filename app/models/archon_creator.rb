@@ -73,16 +73,18 @@ Archon.record_type(:creator) do
                              })
     end
 
-    rec['CreatorRelationships'].each do |archon_relationship|
-      aspace_relationship = create_relationship(obj.jsonmodel_type, archon_relationship)
-      obj.related_agents << aspace_relationship unless aspace_relationship.nil?
-    end
+    if rec['CreatorRelationships']
+      rec['CreatorRelationships'].each do |archon_relationship|
+        aspace_relationship = create_relationship(obj.jsonmodel_type, archon_relationship)
+        obj.related_agents << aspace_relationship unless aspace_relationship.nil?
+      end
 
-    unless note.subnotes.empty?
-      obj.notes << note
-    end
+      unless note.subnotes.empty?
+        obj.notes << note
+      end
 
-    yield obj
+      yield obj
+    end
   end
 
  
@@ -99,7 +101,8 @@ Archon.record_type(:creator) do
 
 
   def self.create_relationship(relator_object_type, rel)
-    archon_id, relationship_code = *rel.flatten
+    archon_id = rel['RelatedCreatorID']
+    relationship_code = rel['CreatorRelationshipTypeID']
     
     case relator_object_type
     when 'agent_person'
