@@ -54,7 +54,11 @@ function StatusEmitter() {
 
   this.refresh_status = function(status, source){
     $("#status-console p:last .progress").html(' 100%');
-    console.append("<p class=\"status " + source + "\">"+status+"</p>");
+    if (source == 'aspace' && $("#status-console p:last").hasClass('aspace')) {
+      $("#status-console p:last").html(status);
+    } else {
+      console.append("<p class=\"status " + source + "\">"+status+"</p>");
+    }
   }
 
   this.show_error = function(error){

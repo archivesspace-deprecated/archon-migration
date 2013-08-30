@@ -98,10 +98,9 @@ module ArchivesSpace
 
     def import(y)
 
-      client_block = Proc.new{ |msg| #normalize_message(msg) do |normaled|
-        $log.debug("PARSE UPDATE: #{msg}")
-         # y << json_chunk(normaled)
-        #end
+      client_block = Proc.new{ |msg| normalize_message(msg) do |normaled|
+          y << json_chunk(normaled)
+        end
       }
 
       reader = ResponseReader.new
