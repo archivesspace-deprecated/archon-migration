@@ -210,6 +210,7 @@ to an Agent. The matching Archon ID for the #{obj.jsonmodel_type} record is
     @archivesspace.repo(repo_id).import(@y) do |batch|
 
       # Classifications
+      emit_status("Migrating Classification records")
       Archon.record_type(:classification).each do |rec|
         rec.class.transform(rec) do |obj|
           # set the creator (can't do this now; aspace issue
@@ -221,6 +222,7 @@ to an Agent. The matching Archon ID for the #{obj.jsonmodel_type} record is
 
       # Accessions
       if archon_repo_id == @args[:default_repository]
+        emit_status("Migrating Accession records")
         Archon.record_type(:accession).each do |rec|
           # yields agents and accessions, so check type
           rec.class.transform(rec) do |obj|
@@ -240,10 +242,8 @@ to an Agent. The matching Archon ID for the #{obj.jsonmodel_type} record is
 
       # Collections
       Archon.record_type(:collection).each do |rec|
-
-        $log.debug("Writing to batch file")
+        emit_status("Migrating collection #{rec['ID']}")
         batch.write!
-        $log.debug("Done writing to batch file")
         next unless rec['RepositoryID'] == archon_repo_id
         rec.class.transform(rec) do |obj|
 
