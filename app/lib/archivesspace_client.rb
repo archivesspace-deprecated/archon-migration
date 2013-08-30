@@ -98,10 +98,10 @@ module ArchivesSpace
 
     def import(y)
 
-      # workaround dumb aspace importer
-      client_block = Proc.new{ |msg| normalize_message(msg) do |normaled|
-          y << json_chunk(normaled)
-        end
+      client_block = Proc.new{ |msg| #normalize_message(msg) do |normaled|
+        $log.debug("PARSE UPDATE: #{msg}")
+         # y << json_chunk(normaled)
+        #end
       }
 
       reader = ResponseReader.new
@@ -130,7 +130,7 @@ module ArchivesSpace
 
       # save the batch
       $log.debug("Posting import batch")
-      $log.debug(cache.inspect)
+#      $log.debug(cache.inspect)
       cache.save! do |response|
         if response.code.to_s == '200'
 
@@ -146,7 +146,7 @@ module ArchivesSpace
                 end
               end
             rescue JSON::ParserError => e
-              y < json_chunk({
+              y << json_chunk({
                                :type => 'error',  
                                :body => e.to_s
                              })
@@ -170,7 +170,6 @@ module ArchivesSpace
 
       # Hash {Archon_id => ASpace_id}
       Hash[save_response.map {|k,v| [k.sub(/.*\//,''), v[0]]}]
-
     end
 
 
@@ -197,9 +196,9 @@ module ArchivesSpace
               :id => status['id']
             }
             yield r
-          elsif status['type'] = 'refresh'
+          elsif status['type'] == 'refresh'
             r = {
-              :type => 'progress-message',
+              :type => 'update',
               :source => 'migration',
               :body => status['label'],
             }

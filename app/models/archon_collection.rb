@@ -54,7 +54,6 @@ Archon.record_type(:collection) do
                      :number => (rec['Extent'] ? rec['Extent'].to_s : nil),
                      :extent_type => get_extent_type(rec['ExtentUnitID']),
                      :portion => unspecified('whole')
-
                    })
 
     obj.extents = [extent]

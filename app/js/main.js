@@ -41,7 +41,7 @@ function updateStatus(update, emitter){
       emitter.show_warning(update.body);
     } else if (update.type == 'progress') {
       emitter.show_progress(update.ticks, update.total);
-    } else if (update.type == 'progress-message') {
+    } else if (update.type == 'update') {
       emitter.show_progress_message(update.body);
     } else {
       // todo: toggle in progress bar
