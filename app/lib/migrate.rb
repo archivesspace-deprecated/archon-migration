@@ -106,9 +106,10 @@ class MigrationJob
           all_groups = @archivesspace.get_json("#{aspace_uri}/groups")
           # take the lowest group ID
           old_group_id = rec["Usergroups"].sort.first
-          group_codes = map_group_id(old_group_id)
-          group_codes.each do |gc|
-            my_groups << all_groups.find{|g| g['group_code'] == gc}['uri']
+          if (group_codes = map_group_id(old_group_id))
+            group_codes.each do |gc|
+              my_groups << all_groups.find{|g| g['group_code'] == gc}['uri']
+            end
           end
         end
 
@@ -198,6 +199,9 @@ to an Agent. The matching Archon ID for the #{obj.jsonmodel_type} record is
       %w(repository-basic-data-entry)
     when "4"
       %w(repository-viewers)
+    else
+      $log.warn("Unable to interpet Archon Group ID: #{old_group_id}. Ignoring")
+      false
     end
   end
 
