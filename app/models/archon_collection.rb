@@ -58,15 +58,25 @@ Archon.record_type(:collection) do
 
     obj.extents = [extent]
 
-    obj.dates << model(:date,
-                       {
-                         :expression => get_date_expression(rec),
-                         :begin => rec['NormalDateBegin'],
-                         :end => rec['NormalDateEnd'],
-                         :date_type => 'inclusive',
-                         :label => unspecified('creation')
-                       })
-      
+    date =  model(:date,
+                  {
+                    :expression => get_date_expression(rec),
+                    :date_type => 'inclusive',
+                    :label => unspecified('creation')
+                  })
+
+    dbegin = rec['NormalDateBegin']
+    dend = rec['NormalDateEnd']
+
+    if dbegin && dend && (dbegin > dend)
+      $log.warn("Throwing out nonsensical Date fields, begin: #{dbegin}; end: #{dend}")
+    else
+      date.begin = dbegin
+      date.end = dend
+    end
+
+    obj.dates << date
+
     if rec['PredominantDates']
       obj.dates << model(:date,
                          {
@@ -105,7 +115,6 @@ Archon.record_type(:collection) do
                            :type => unspecified('abstract')
                          })
     end
-
 
     if rec['AcquisitionDate']
       obj.dates << model(:date,
@@ -257,5 +266,4 @@ Archon.record_type(:collection) do
 
     ]
   end
-
 end
