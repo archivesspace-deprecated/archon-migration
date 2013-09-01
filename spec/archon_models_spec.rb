@@ -391,8 +391,10 @@ describe "Archon record mappings" do
       with({
              type_id => '19', 
              'CreatorRelationships' => [
-                                        {'4' => '2'}, 
-                                        #{'2' => '5'} TODO after spec clarification
+                                        {
+                                          'RelatedCreatorID' => '4',
+                                          'CreatorRelationshipTypeID' => '2'
+                                        }
                                        ]
            }) do |rec, set|
         related_agents = set.first.related_agents
