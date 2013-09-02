@@ -183,6 +183,14 @@ Archon.record_type(:collection) do
 
     end
 
+    if rec['OtherURL']
+      obj.external_documents << model(:external_document,
+                                      {
+                                        :title => 'Other URL',
+                                        :location => rec['OtherURL']
+                                      })
+    end
+
     yield obj
   end
 

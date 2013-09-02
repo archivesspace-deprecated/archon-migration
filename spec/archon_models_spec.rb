@@ -615,6 +615,12 @@ describe "Archon record mappings" do
     end
 
 
+    it "maps 'OtherURL' to resource.external_documents[].location" do
+      @obj.external_documents[0].title.should eq('Other URL')
+      @obj.external_documents[0].location.should eq(@rec['OtherURL'])
+    end
+
+
     it "maps 'Scope' to a single part note" do
       @obj.notes[0]['jsonmodel_type'].should eq('note_singlepart')
       @obj.notes[0]['label'].should eq("Scope and Contents")
