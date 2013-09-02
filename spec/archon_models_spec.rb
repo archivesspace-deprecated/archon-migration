@@ -751,7 +751,7 @@ describe "Archon record mappings" do
 
 
     it "maps 'FindingLanguageID' to 'resource:finding_aid_language'" do
-      @obj.finding_aid_language.should eq(@rec['FindingLanguageID'])
+      @obj.finding_aid_language.should eq('eng')
     end
 
 

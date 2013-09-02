@@ -35,21 +35,17 @@ Archon.record_type(:collection) do
 
     i = 0
     ids.each do |id|
-      obj.send("id_#{i}=", id.clone) #TODO: Classification returns clean set
-      i += 1
+      if i < 3
+        obj.send("id_#{i}=", id) 
+        i += 1
+      else
+        $low.warn("Discarding an identifier (#{id}) dervied from the linked Classification. Not enough slots in ArchivesSpace. Record: #{rec.inspect}")
+      end 
     end
 
-    if rec['CollectionIdentifier'] && i < 4
-      obj.send("id_#{i}=", rec['CollectionIdentifier'])
-    end
+    final_id = rec['CollectionIdentifier'] || SecureRandom.uuid
 
-    if obj.id_0.nil?
-      $log.warn("Couldn't find anything to assign to 'resource.id_0'. Generating a random value. See Archon record #{rec.inspect}")
-#      obj.id_0 = "migration_#{SecureRandom.uuid}"
-      obj.id_0 = ""
-    end
-
-    obj.id_0 << "_#{SecureRandom.uuid}"
+    obj.send("id_#{i}=", final_id)
 
     extent = model(:extent, 
                    {
@@ -136,10 +132,16 @@ Archon.record_type(:collection) do
       'RevisionHistory' => 'finding_aid_revision_description',
       'PublicationDate' => 'finding_aid_date',
       'PublicationNote' => 'finding_aid_note',
-      'FindingLanguageID' => 'finding_aid_language',
     }.each do |k, v|
       obj[v] = rec[k]
     end
+
+    
+    if rec['FindingLanguageID'] 
+      langrec = Archon.record_type(:language).find(rec['FindingLanguageID'])
+      obj.finding_aid_language = langrec['LanguageShort']
+    end
+
 
     if rec.has_key?('Languages') && rec['Languages'][0]
       obj.language = rec['Languages'][0]

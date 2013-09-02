@@ -47,7 +47,7 @@ Archon.record_type(:classification) do
     ids = [] unless ids
     ids.unshift(self['ClassificationIdentifier'])
     if self['ParentID'] == '0'
-      return ids
+      return ids.dup
     else
       self.class.find(self['ParentID']).resource_identifiers(ids)
     end
