@@ -4,6 +4,8 @@ Archon.record_type(:collection) do
   plural 'collections'
   corresponding_record_type :resource
   include GenericArchivalObject
+  no_html 'Title'
+
 
   def self.transform(rec)
     obj = super

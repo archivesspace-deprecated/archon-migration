@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 require_relative 'startup'
 require 'net/http/persistent'
 require 'json'
@@ -59,6 +60,10 @@ module Archon
       
       def corresponding_record_type(aspace_record_type)
         @aspace_record_type = aspace_record_type
+      end
+
+      def no_html(*fields)
+        @no_html = fields
       end
         
     end
@@ -187,6 +192,19 @@ module Archon
     end
 
 
+    def self.filter(data)
+      if @no_html
+        @no_html.each do |field|
+          if data.has_key?(field)
+            data[field] = strip_html(data[field])
+          end
+        end
+      end
+      
+      data
+    end
+
+
     def self.model(type, data = nil)
       model = ASpaceImport.JSONModel(type)
       if data
@@ -222,7 +240,12 @@ module Archon
     end
 
 
-    def self.name_template(rec=nil)
+    def self.strip_html(val)
+      val.gsub(%r{</?[^>]+?>}, '')
+    end
+
+
+    def self.name_template(rec=nil, extra_vals=nil)
       hsh = {
         :name_order => unspecified('direct'),
         :sort_name_auto_generate => true,
@@ -230,7 +253,11 @@ module Archon
       if rec && rec['Identifier']
         hsh.merge!(:authority_id => rec['Identifier'])
       end
-      
+
+      if extra_vals
+        hsh.merge!(extra_vals)
+      end
+
       hsh
     end
 
@@ -240,7 +267,8 @@ module Archon
     end
 
     def initialize(data)
-      @data = data
+      @data = self.class.filter(data)
+
     end
 
 
@@ -294,7 +322,6 @@ module Archon
       req = Net::HTTP::Get.new(uri.request_uri)
       response = http_request(uri, req)
       $log.debug("Raw Archon response : #{response.inspect}")
-#      $log.debug("BODY: #{response.body}")
       if response.code != '200'
         raise "ERROR Getting JSON #{response.inspect}"
       else

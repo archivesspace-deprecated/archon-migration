@@ -49,10 +49,10 @@ describe "Archon record mappings" do
 
 
   def change(rec_orig, overwrites)
-    rec = rec_orig.clone
-    data = rec.instance_variable_get(:@data)
-    rec.instance_variable_set(:@data, data.merge(overwrites))
-    rec
+    data = rec_orig.instance_variable_get(:@data)
+    data.merge!(overwrites)
+
+    rec_orig.class.new(data)
   end
 
   shared_examples "archival object location mappings" do
@@ -111,7 +111,14 @@ describe "Archon record mappings" do
       obj = record.class.transform_location(loc)
       obj.coordinate_1_indicator.should eq('not recorded')
     end
-      
+  end
+
+
+  shared_examples "models that strip HTML from a given field" do
+
+    it "strips HTML from certain fields" do
+      field.should_not match(/<\/?[^<>\/]+>/)
+    end
   end
 
 
@@ -259,8 +266,8 @@ describe "Archon record mappings" do
 
 
   describe "Creator record" do 
-    before(:all) do 
-      verify_archon_dataset(@client)
+    def t(rec)
+      rec.class.transform(rec){|obj| obj}
     end
 
     def with(hash = {})
@@ -294,6 +301,20 @@ describe "Archon record mappings" do
       with({type_id => '20'}) do |rec, set|
         set.first.names[0]['family_name'].should eq(rec['Name'])
       end
+    end
+
+
+    it_behaves_like "models that strip HTML from a given field" do
+      let(:field) {
+        data = create_test_hash(text_fields, template.
+                                merge({
+                                        'Name' => '<b><h1>name</h1></b>'}))
+        rec = Archon.record_type(:creator).new(data)
+        obj = t(rec)
+        name_string = obj.names[0]['primary_name']
+
+        name_string
+      }
     end
 
 
@@ -407,6 +428,10 @@ describe "Archon record mappings" do
 
 
   describe "Subject record" do 
+    def t(rec)
+      rec.class.transform(rec){|obj| obj}
+    end
+
 
     def with(hash = {})
       create_test_set(
@@ -414,10 +439,9 @@ describe "Archon record mappings" do
                       text_fields,
                       template.merge(hash)
                       ) do |rec, set|
-        yield rec, set
+        yield rec, set[0]
       end
     end
-
 
     let (:text_fields) { %w(Subject Identifier Description) }
     let (:template) { {
@@ -430,15 +454,27 @@ describe "Archon record mappings" do
     let (:type_id) {'SubjectTypeID'}
 
     it "creates an agent_person for subjects with type 8 unless the subject has a parent" do
-      with(type_id => '8') do |rec, set|
-        set.first.jsonmodel_type.should eq('agent_person')
+      with(type_id => '8') do |rec, obj|
+        obj.jsonmodel_type.should eq('agent_person')
       end
       
       parent_data = create_test_hash(text_fields, template)
 
-      with({type_id => '8', 'Parent' => parent_data}) do |rec, set|
-        set.first.jsonmodel_type.should eq('subject')
+      with({type_id => '8', 'Parent' => parent_data}) do |rec, obj|
+        obj.jsonmodel_type.should eq('subject')
       end
+    end
+
+    it_behaves_like "models that strip HTML from a given field" do
+      let(:field) {
+        data = create_test_hash(text_fields, template.
+                                merge({
+                                        'Subject' => '<b><h1>test</h1></b>'}))
+        rec = Archon.record_type(:subject).new(data)
+        obj = t(rec)
+        term_string = obj.terms.map{|term| term[:term]}.join('')
+        term_string
+      }
     end
   end
 
@@ -520,11 +556,13 @@ describe "Archon record mappings" do
 
 
   describe "Archon Collection" do
+    def t(rec)
+      rec.class.transform(rec) { |obj| obj }
+    end
+
     before(:all) do
       @rec = Archon.record_type(:collection).find('1')
-      @rec.class.transform(@rec) do |obj|
-        @obj =  obj
-      end
+      @obj = t(@rec)
     end
 
 
@@ -726,7 +764,16 @@ describe "Archon record mappings" do
       let(:object) { @obj }
       let(:record) { @rec }
     end
+
+
+    it_behaves_like "models that strip HTML from a given field" do
+      let(:field) {
+        obj = t(change(@rec, 'Title' => "<b><span class=\"hi\">hi</span></b>"))
+        obj.title
+      }
+    end
   end
+
 
   describe "Archon Accession" do
     before(:all) do
@@ -841,6 +888,14 @@ describe "Archon record mappings" do
     end
 
 
+    it_behaves_like "models that strip HTML from a given field" do
+      let(:field) {
+        rec = change(@rec, {'Title' => "<b><span class=\"oh\">hello</span></b>"})
+        t(rec).title
+      }
+    end
+
+
     it_behaves_like "a content record with title and date" do
       let (:object) { t(@rec) }
       let (:record) { @rec }
@@ -919,11 +974,15 @@ describe "Archon record mappings" do
     end
   end
 
+
   describe "Archon Digital Content" do
+    def t(rec)
+      rec.class.to_digital_object(rec)
+    end
     
     before(:all) do
       @rec = Archon.record_type(:digitalcontent).find(1)
-      @obj = @rec.class.to_digital_object(@rec)
+      @obj = t(@rec)
     end
 
 
@@ -931,6 +990,15 @@ describe "Archon record mappings" do
       let (:object) { @obj }
       let (:record) { @rec }
     end
+
+
+    it_behaves_like "models that strip HTML from a given field" do
+      let(:field) {
+        rec = change(@rec, 'Title' => "<br /><span>hello</span><br />")
+        t(rec).title
+      }
+    end
+
 
     it "maps 'ID' to *.external_ids[]" do
       @obj.external_ids[0]['external_id'].should eq(@rec['ID'])

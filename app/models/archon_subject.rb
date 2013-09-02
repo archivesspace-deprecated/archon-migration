@@ -1,5 +1,7 @@
 Archon.record_type(:subject) do
-  self.plural 'subjects'
+  plural 'subjects'
+  no_html 'Subject'
+
 
   def self.transform(rec)
     if %w(3 8 10).include?(rec["SubjectTypeID"]) && rec['Parent'].nil?

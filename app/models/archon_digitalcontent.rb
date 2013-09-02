@@ -1,5 +1,7 @@
 Archon.record_type(:digitalcontent) do
   self.plural 'digitalcontent'
+  no_html 'Title'
+
 
   def self.transform(rec)
     obj = to_digital_object(rec)

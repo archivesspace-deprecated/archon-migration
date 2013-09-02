@@ -1,5 +1,6 @@
 Archon.record_type(:content) do
   plural 'content'
+  no_html 'Title'
 
   def self.endpoint(start = 1)
     raise "Collection not specified" unless @cid

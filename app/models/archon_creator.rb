@@ -11,32 +11,37 @@ Archon.record_type(:creator) do
     case rec['CreatorTypeID']
     when '19', '21', '23'
       obj =  model(:agent_person).new
+
+      vals = {
+        :primary_name => strip_html(rec['Name']),
+        :fuller_form => rec['NameFullerForm'],
+      }
+
       obj.names << model(:name_person, 
-                         name_template(rec).merge({
-                                                    :primary_name => rec['Name'],
-                                                    :fuller_form => rec['NameFullerForm'],
-                                             }))
+                         name_template(rec, vals))
+
       if rec['NameVariants']
+        vals = {
+          :primary_name => strip_html(rec['NameVariants']),
+        }
         obj.names << model(:name_person,
-                           name_template(rec).merge({
-                                                      :primary_name => rec['NameVariants'],
-                                                    }))
+                           name_template(rec, vals))
       end
 
     when '20'
       obj = model(:agent_family).new
       obj.names << model(:name_family, 
-                         name_template(rec).merge({
-                                                    :family_name => rec['Name'],
-                                                  }))
+                         name_template(rec, {
+                                         :family_name => rec['Name'],
+                                       }))
 
 
     when '22'
       obj = model(:agent_corporate_entity).new
       obj.names << model(:name_corporate_entity, 
-                         name_template(rec).merge({
-                                                    :primary_name => rec['Name'],
-                                                  }))
+                         name_template(rec, {
+                                         :primary_name => strip_html(rec['Name']),
+                                       }))
     end
 
     if rec['Dates']
@@ -88,9 +93,14 @@ Archon.record_type(:creator) do
   end
 
  
-  def self.name_template(rec)
-    hsh = super
-    hsh.merge({:source => get_source(rec['CreatorSourceID'])})
+  def self.name_template(rec, extra_vals = nil)
+    extra_vals ||= {}
+
+    unless extra_vals.has_key?(:source)
+      extra_vals.merge!({:source => get_source(rec['CreatorSourceID'])})
+    end
+
+    super(rec, extra_vals)
   end
 
 
