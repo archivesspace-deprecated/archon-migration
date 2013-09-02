@@ -1,10 +1,31 @@
 Archon.record_type(:digitalfile) do
   self.plural 'digitalfiles'
 
+  @filenames = {}
+
   def self.transform(rec)
     obj = to_digital_object_component(rec)
     
     yield obj
+  end
+
+
+  def self.update_filename(data)
+    if @filenames[data['Filename']]
+      @filenames[data['Filename']] += 1
+      data['Filename'] = "#{data['Filename']}.#{@filenames[data['Filename']]}"
+    else
+      @filenames[data['Filename']] = 0
+    end
+  end
+
+
+  def initialize(data)
+    if data['Filename']
+      self.class.update_filename(data)
+    end
+
+    super(data)
   end
 
 

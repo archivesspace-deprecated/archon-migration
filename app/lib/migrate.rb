@@ -334,9 +334,15 @@ to an Agent. The matching Archon ID for the #{obj.jsonmodel_type} record is
 
   def extract_bitstream(rec)
     endpoint = "/?p=core/digitalfileblob&fileid=#{rec['ID']}"
-#    filepath = Tempfile.new(rec['Filename'], Dir.tmpdir + "/archon_bitstreams/")
-    filepath = File.new(Dir.tmpdir + "/archon_bitstreams/" + rec['Filename'], 'w')
+
+    filepath = File.new(find_bitstream_path(rec['Filename']), 'w')
     @archon.download_bitstream(endpoint, filepath)
+  end
+
+
+  def find_bitstream_path(name, number=nil)
+    path = Dir.tmpdir + "/archon_bitstreams/" + name
+    return path
   end
 
 
@@ -401,7 +407,6 @@ to an Agent. The matching Archon ID for the #{obj.jsonmodel_type} record is
 
   def package_digital_files
     directory = Dir.tmpdir + "/archon_bitstreams/"
-#    zipfile_name = File.expand_path('bitstreams.zip', settings.public)
     zipfile_name = File.join(File.dirname(__FILE__), '../', 'public', 'bitstreams.zip')
    
     Zip::ZipFile.open(zipfile_name, Zip::ZipFile::CREATE) do |zipfile|
