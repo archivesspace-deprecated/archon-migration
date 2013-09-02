@@ -22,3 +22,6 @@
 # Ignore the 'ignore' directory
 /ignore
 
+
+batch_trace*
+config_local.rb
