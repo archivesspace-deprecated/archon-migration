@@ -282,7 +282,7 @@ to an Agent. The matching Archon ID for the #{obj.jsonmodel_type} record is
           container_trees[obj_or_cont[0]] << obj_or_cont[1]
         else
           resolve_ids_to_links(rec, obj_or_cont)
-          batch << obj_or_cont
+          batch.unshift(obj_or_cont)
         end
       end
     end
@@ -320,8 +320,7 @@ to an Agent. The matching Archon ID for the #{obj.jsonmodel_type} record is
       extract_bitstream(rec)
 
       rec.class.transform(rec) do |obj|
-        batch << obj
-        batch.pop
+        batch.unshift(obj)
       end
     end
   end
