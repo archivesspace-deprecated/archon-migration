@@ -305,7 +305,13 @@ to an Agent. The matching Archon ID for the #{obj.jsonmodel_type} record is
           else
             $log.warn("Failed to find an archival_object record with Archon ID #{rec['CollectionContentID']}")
           end
-        else
+        end
+
+        if rec['CollectionID']
+          unless rec['CollectionID'] == collection_rec['ID']
+            raise "Unexpected DigitalContent Collection reference"
+          end
+
           associate_digital_instance(coll_obj, obj)
         end
 

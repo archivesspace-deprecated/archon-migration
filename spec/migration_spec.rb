@@ -114,6 +114,13 @@ describe "Migration" do
   end
 
 
+  it "maps digital_object records into resource instance subrecords" do
+    r = find(:resource, 1)
+    diginst = r.instances.find {|i| i['instance_type'] == 'digital_object'}
+    diginst.should_not be_nil
+  end
+
+
   it "maps DigitalFile records to digital_object_component and links them" do
     digital_object_component = find(:digital_object_component, 1)
     digital_object = find(:digital_object, 1)
