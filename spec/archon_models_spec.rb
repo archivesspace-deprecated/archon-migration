@@ -276,7 +276,7 @@ describe "Archon record mappings" do
                       text_fields,
                       template.merge(hash)
                       ) do |rec, set|
-        yield rec, set
+        yield rec, set.first
       end
     end
 
@@ -293,13 +293,13 @@ describe "Archon record mappings" do
 
     it "maps 'Name' to primary_name or family_name" do
       %w(19 22).each do |code|
-        with({type_id => code}) do |rec, set|
-          set.first.names[0]['primary_name'].should eq(rec['Name'])
+        with({type_id => code}) do |rec, obj|
+          obj.names[0]['primary_name'].should eq(rec['Name'])
         end
       end
       
-      with({type_id => '20'}) do |rec, set|
-        set.first.names[0]['family_name'].should eq(rec['Name'])
+      with({type_id => '20'}) do |rec, obj|
+        obj.names[0]['family_name'].should eq(rec['Name'])
       end
     end
 
@@ -319,23 +319,23 @@ describe "Archon record mappings" do
 
 
     it "maps 'NameFullerForm' to agent_person.names[0].fuller_form" do
-      with({type_id => '19'}) do |rec, set|
-        set.first.names[0]['fuller_form'].should eq(rec['NameFullerForm'])
+      with({type_id => '19'}) do |rec, obj|
+        obj.names[0]['fuller_form'].should eq(rec['NameFullerForm'])
       end
     end
 
 
     it "maps 'NameVariants' to agent_person.names[1].primary_name" do
-      with({type_id => '19'}) do |rec, set|
-        set.first.names[1]['primary_name'].should eq(rec['NameVariants'])
+      with({type_id => '19'}) do |rec, obj|
+        obj.names[1]['primary_name'].should eq(rec['NameVariants'])
       end
     end
 
 
     it "uses the 'CreatorSource' lookup list to set agent_person.names[].source" do
-      with({'CreatorSourceID' => '3'}) do |rec, set|
+      with({'CreatorSourceID' => '3'}) do |rec, obj|
         (0..1).each do |i|
-          set.first.names[i]['source'].should eq('CreSrcAbbr')
+          obj.names[i]['source'].should eq('CreSrcAbbr')
         end
       end
     end
@@ -343,66 +343,67 @@ describe "Archon record mappings" do
 
     it "makes an agent_person for type ID 19, 21 and 23" do
       %w(19 21 23).each do |code|
-        with({type_id => code}) do |rec, set|
-          set.first.jsonmodel_type.should eq('agent_person')
+        with({type_id => code}) do |rec, obj|
+          obj.jsonmodel_type.should eq('agent_person')
         end
       end
     end
 
 
     it "makes an agent_family for type ID 20" do
-      with({type_id => '20'}) do |rec, set|
-        set.first.jsonmodel_type.should eq('agent_family')
+      with({type_id => '20'}) do |rec, obj|
+        obj.jsonmodel_type.should eq('agent_family')
       end
     end
 
     
     it "makes an agent_corporate_entity for type ID 22" do
-      with({type_id => '22'}) do |rec, set|
-        set.first.jsonmodel_type.should eq('agent_corporate_entity')
+      with({type_id => '22'}) do |rec, obj|
+        obj.jsonmodel_type.should eq('agent_corporate_entity')
       end
     end
 
 
     it "maps 'Identifier' to 'agent.names[0].authority_id'" do
-      with do |rec, set|
-        set.first.names[0]['authority_id'].should eq(rec['Identifier'])
+      with do |rec, obj|
+        obj.names[0]['authority_id'].should eq(rec['Identifier'])
       end
     end
 
 
     it "maps 'Dates' to 'agent.dates_of_existece[0].expression'" do
-      with do |rec, set|
-        set.first.dates_of_existence[0]['expression'].should eq(rec['Dates'])
+      with do |rec, obj|
+        obj.dates_of_existence[0]['expression'].should eq(rec['Dates'])
       end
     end
 
 
     it "maps 'BiogHist' to the first 'note_text' subnote of the first 'note_bioghist'" do
-      with do |rec, set|
-        notes = get_subnotes_by_type(set.first.notes[0], 'note_text')
+      with do |rec, obj|
+        p obj
+        notes = get_subnotes_by_type(obj.notes[0], 'note_text')
         notes[0]['content'].should eq(rec['BiogHist'])
       end
     end
 
 
     it "maps 'BiogHistAuthor' to the first 'note_citation' subnote of the first 'note_bioghist'" do
-      with do |rec, set|
-        notes = get_subnotes_by_type(set.first.notes[0], 'note_citation')
+      with do |rec, obj|
+        notes = get_subnotes_by_type(obj.notes[0], 'note_citation')
         notes[0]['content'][0].should eq("Author: #{rec['BiogHistAuthor']}")
       end
     end
 
 
     it "maps 'Sources' to either the second 'note_citation' or the first 'note_abstract' subnote" do
-      with({type_id => '19'}) do |rec, set|
-        notes = get_subnotes_by_type(set.first.notes[0], 'note_citation')
+      with({type_id => '19'}) do |rec, obj|
+        notes = get_subnotes_by_type(obj.notes[0], 'note_citation')
         notes[1]['content'][0].should eq(rec['Sources'])
       end
 
       #corporate_entity
-      with({type_id => '22'}) do |rec, set|
-        notes = get_subnotes_by_type(set.first.notes[0], 'note_abstract')
+      with({type_id => '22'}) do |rec, obj|
+        notes = get_subnotes_by_type(obj.notes[0], 'note_abstract')
         notes[0]['content'][0].should eq(rec['Sources'])
       end
     end
@@ -417,8 +418,8 @@ describe "Archon record mappings" do
                                           'CreatorRelationshipTypeID' => '2'
                                         }
                                        ]
-           }) do |rec, set|
-        related_agents = set.first.related_agents
+           }) do |rec, obj|
+        related_agents = obj.related_agents
         related_agents[0]['relator'].should eq('is_parent_of')
         related_agents[0]['ref'].should eq('/agents/people/4')
       end

@@ -8,12 +8,14 @@ describe "Migration" do
 
     e = Enumerator.new do |y|
       m = MigrationJob.new
-      m.connection_check
       m.migrate(y)
     end
 
+    @msgs = []
+
     e.each do |msg|
       puts msg
+      @msgs << JSON.parse(msg.sub(/---\n/, ""))
     end 
 
     JSONModel.set_repository(2)
@@ -36,6 +38,11 @@ describe "Migration" do
     c.title.should eq("ClassificationMgr.Title-Archon")
     c.creator.should_not be_nil
     c.creator['ref'].should eq('/agents/people/7')
+  end
+
+
+  it "migrates the sample data without generating errors" do
+    @msgs.map{|msg| msg['type']}.should_not include('error')
   end
 
 
@@ -120,6 +127,12 @@ describe "Migration" do
 
     ref = accession.instances[0]['container']['container_locations'][0]['ref']
     ref.should eq(location.uri)
+  end
+
+
+  it "maps Creator['BiogHist'] to agent.notes[].subnotes[0]['content']" do
+    agent = find(:agent_person, 6)
+    agent.notes[0]['subnotes'][0]['content'].should eq('BiogHist Note for Creator.')
   end
 end
     
