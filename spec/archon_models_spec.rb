@@ -698,7 +698,7 @@ describe "Archon record mappings" do
        :note_type => 'prefercite', 
        :label => 'Preferred Citation'},
 
-     {:archon_type => %w(OrigCopiesNote OrigCopiesURL RelatedMaterialsURL), 
+     {:archon_type => %w(OrigCopiesNote OrigCopiesURL), 
        :note_type => 'originalsloc', 
        :label => 'Existence and Location of Originals'},
 
@@ -710,6 +710,11 @@ describe "Archon record mappings" do
        :note_type => 'bioghist',
        :label => "Biographical or Historical Information",
        :joint => "Note written by "
+     },
+
+     {:archon_type => %w(RelatedMaterials RelatedMaterialsURL),
+       :note_type => 'relatedmaterial',
+       :label => "Related Materials"
      }
 
     ].each do |test_data|
