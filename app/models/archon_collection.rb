@@ -115,9 +115,11 @@ Archon.record_type(:collection) do
     end
 
     if rec['AcquisitionDate']
+
+      expression = format_acquisition_date(rec['AcquisitionDate'])
       obj.dates << model(:date,
                          {
-                           :expression => "Date acquired: #{rec['AcquisitionDate']}",
+                           :expression => "Date acquired: #{expression}",
                            :date_type => 'single',
                            :label => unspecified('other')
                          })
@@ -274,5 +276,22 @@ Archon.record_type(:collection) do
      }
 
     ]
+  end
+
+
+  def self.format_acquisition_date(val)
+    return val if !val.match(/[0-9]{4}(0[0-9]|1[0-2])(0[1-9]|[1-2][0-9]|3[0-1])/)
+
+    formatted = val[0..3]
+
+    if val[4..5].to_i < 13 && val[4..5].to_i > 0
+      formatted = formatted + '-' + val[4..5] 
+    end
+
+    if formatted.length == 7 && val[6..7].to_i > 0 && val[6..7].to_i < 32
+      formatted = formatted + '-' + val[6..7] 
+    end
+
+    formatted
   end
 end

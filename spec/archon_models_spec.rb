@@ -732,7 +732,17 @@ describe "Archon record mappings" do
 
 
     it "maps 'AcquisitionDate' to dates[].expression" do
-      @obj.dates[2]['expression'].should eq("Date acquired: #{@rec['AcquisitionDate']}")
+      @obj.dates[2]['expression'].should eq("Date acquired: 2012-01-01")
+    end
+
+
+    it "formats 'AcquisitionDate' to yyyy-mm-dd and chooses appropriate granularity" do
+
+      obj1 = t(change(@rec, 'AcquisitionDate' => '19991231'))
+      obj1.dates[2]['expression'][-10..-1].should eq('1999-12-31')
+      
+      obj2 = t(change(@rec, 'AcquisitionDate' => '18880001'))
+      obj2.dates[2]['expression'][-4..-1].should eq('1888')
     end
 
 
