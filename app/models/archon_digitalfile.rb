@@ -24,6 +24,10 @@ Archon.record_type(:digitalfile) do
       obj.file_versions << fv
     end
 
+    if rec['DisplayOrder']
+      obj.position = rec['DisplayOrder'].to_i
+    end
+
     raise "Bad ID" unless rec['DigitalContentID'] && rec['DigitalContentID'] != '0'
 
     doid = Archon.record_type(:digitalcontent).import_id_for(rec['DigitalContentID'])
