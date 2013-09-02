@@ -8,7 +8,14 @@ module ArchivesSpace
 
   def self.init
     $log.warn("Already initiaized ArchivesSpace") if @@initialized
-    $:.unshift File.dirname(File.absolute_path(__FILE__)) + "/../../vendor/archivesspace/client_tools/#{Appdata.aspace_version}/"
+
+    ctools_path = File.dirname(__FILE__) + "/../../vendor/archivesspace/client_tools/#{Appdata.aspace_version}/"
+
+    unless File.exists?(ctools_path)
+      raise "Missing client libraries for ASpace #{Appdata.aspace_version}"
+    end
+
+    $:.unshift ctools_path
 
     ArchivesSpacePatches.patch_in do 
       require 'common/jsonmodel'
