@@ -83,13 +83,13 @@ Archon.record_type(:creator) do
         aspace_relationship = create_relationship(obj.jsonmodel_type, archon_relationship)
         obj.related_agents << aspace_relationship unless aspace_relationship.nil?
       end
-
-      unless note.subnotes.empty?
-        obj.notes << note
-      end
-
-      yield obj
     end
+
+    unless note.subnotes.empty?
+      obj.notes << note
+    end
+
+    yield obj
   end
 
  
