@@ -134,8 +134,12 @@ Archon.record_type(:content) do
     end
 
     unless obj.title || obj.dates.count > 0
-      $log.warn(%{Assigning a random title to the archival_object record created from Archon record #{rec.inspect}})
-      obj.title = "migration_#{SecureRandom.uuid}"
+      if rec['UniqueID']
+        obj.title = rec['UniqueID']
+      else
+        $log.warn(%{Assigning a random title to the archival_object record created from Archon record #{rec.inspect}})
+        obj.title = "migration_#{SecureRandom.uuid}"
+      end
     end
 
     obj
