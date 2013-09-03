@@ -28,6 +28,21 @@ $(document).ready(function(){
   };
 
   $('#migration-form').ajaxForm(options);
+
+  $("#nodourl").click(function(){
+    // If checked
+    if ($("#nodourl").is(":checked")) {
+    //show the hidden div
+      console.log("remove");
+      $("#do_baseurl").removeAttr('required');
+      console.log($("#do_baseurl").attr('required'));
+    }  else {
+      //otherwise, hide it
+      $("#do_baseurl").attr("required", "true");
+      console.log($("#do_baseurl").attr('required'));
+    }
+  });
+
 });
 
 

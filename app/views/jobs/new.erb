@@ -5,7 +5,7 @@
 
     <div class="pure-control-group">
       <label for="job_archon_url">Archon URL:</label>
-      <input id="job_archon_url" name="job[archon_url]" type="text" value="<%= Appdata.default_archon_url %>" required/> 
+      <input id="job_archon_url" class="pure-input-1-2" name="job[archon_url]" type="text" value="<%= Appdata.default_archon_url %>" required/> 
     </div>
     <div class="pure-control-group">
       <label for="job_archon_user">Archon User:</label>
@@ -20,7 +20,7 @@
   <fieldset>
     <div class="pure-control-group">
       <label for="job_aspace_url">ASpace URL:</label>
-      <input id="job_aspace_url" name="job[aspace_url]" type="text" value="<%= Appdata.default_aspace_url %>" required/> 
+      <input id="job_aspace_url" class="pure-input-1-2" name="job[aspace_url]" type="text" value="<%= Appdata.default_aspace_url %>" required/> 
     </div>
     <div class="pure-control-group">
       <label for="job_aspace_user">Aspace User:</label>
@@ -36,7 +36,11 @@
   <fieldset>
     <div class="pure-control-group">
       <label for="do_baseurl">Digital Object Base URL</label>
-      <input id="do_baseurl" name="job[do_baseurl]" type="text" value="" />
+      <input id="do_baseurl" class="pure-input-1-2" name="job[do_baseurl]" type="text" value="" required/>
+
+    <label for="nodourl"> Leave blank
+</label>
+<input id="nodourl" type="checkbox" >
     </div>
   </fieldset>
   <div class="pure-controls">
