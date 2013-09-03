@@ -141,7 +141,11 @@ Archon.record_type(:collection) do
     
     if rec['FindingLanguageID'] 
       langrec = Archon.record_type(:language).find(rec['FindingLanguageID'])
-      obj.finding_aid_language = langrec['LanguageShort']
+      if langrec
+        obj.finding_aid_language = langrec['LanguageShort']
+      else
+        $log.warn("Can't find an Archon Language record with ID: #{rec['FindingLanguageID']}")
+      end
     end
 
 
