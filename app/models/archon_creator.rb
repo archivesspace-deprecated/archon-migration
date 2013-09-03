@@ -55,8 +55,6 @@ Archon.record_type(:creator) do
       $log.warn("Couldn't create an agent record from: #{rec.inspect}")
     end
 
-    end
-
     if rec['Dates']
       obj.dates_of_existence << model(:date,
                                       {
