@@ -1,6 +1,15 @@
 Archon.record_type(:creator) do
   plural 'creators'
 
+  def initialize(data)
+    if data['CreatorTypeID'] && !data['CreatorTypeID'].is_a?(String)
+      data['CreatorTypeID'] = data['CreatorTypeID'].to_s
+    end
+
+    super(data)
+  end
+
+
   def self.transform(rec)
 
     unless rec.has_key?('ID')
@@ -42,6 +51,10 @@ Archon.record_type(:creator) do
                          name_template(rec, {
                                          :primary_name => strip_html(rec['Name']),
                                        }))
+    else
+      $log.warn("Couldn't create an agent record from: #{rec.inspect}")
+    end
+
     end
 
     if rec['Dates']
