@@ -10,19 +10,29 @@ Archon.record_type(:digitalfile) do
   end
 
 
-  def self.update_filename(data)
-    if @filenames[data['Filename']]
-      @filenames[data['Filename']] += 1
-      data['Filename'] = "#{data['Filename']}.#{@filenames[data['Filename']]}"
-    else
-      @filenames[data['Filename']] = 0
+  def self.unique_filename(basename, id)
+    @filenames[basename] ||= []
+
+    i =  @filenames[basename].index(id)
+    if i.nil?
+      @filenames[basename] << id
+      i = @filenames.length - 1
     end
+
+    newname = if i == 0
+                basename
+              elsif basename.match(/\.[^.]+/)
+                basename.sub(/\.(.*)/, '.' + i.to_s + '.\1')
+              else
+                "#{basename}.#{i}"
+              end
+    newname
   end
 
 
   def initialize(data)
     if data['Filename']
-      self.class.update_filename(data)
+      data['Filename'] = self.class.unique_filename(data['Filename'], data['ID'])
     end
 
     super(data)

@@ -341,7 +341,7 @@ to an Agent. The matching Archon ID for the #{obj.jsonmodel_type} record is
   end
 
 
-  def find_bitstream_path(name, number=nil)
+  def find_bitstream_path(name)
     path = Dir.tmpdir + "/archon_bitstreams/" + name
     return path
   end

@@ -138,7 +138,7 @@ describe "Migration" do
 
 
   it "maps Creator['BiogHist'] to agent.notes[].subnotes[0]['content']" do
-    agent = find(:agent_person, 6)
+    agent = find(:agent_person, 7)
     agent.notes[0]['subnotes'][0]['content'].should eq('BiogHist Note for Creator.')
   end
 end

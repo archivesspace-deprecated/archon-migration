@@ -136,7 +136,6 @@ module ArchivesSpace
 
       # save the batch
       $log.debug("Posting import batch")
-#      $log.debug(cache.inspect)
       cache.save! do |response|
         if response.code.to_s == '200'
 
@@ -172,8 +171,6 @@ module ArchivesSpace
 
 
     def prepare_map(save_response)
-      $log.debug("SR-Raw #{save_response}")
-
       # Hash {Archon_id => ASpace_id}
       Hash[save_response.map {|k,v| [k.sub(/.*\//,''), v[0]]}]
     end
