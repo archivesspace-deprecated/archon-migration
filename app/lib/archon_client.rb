@@ -399,7 +399,8 @@ module Archon
 
     def init_session
       $log.debug("Logging into Archon")
-      uri = URI.parse(@url + "/?p=core/authenticate&apilogin=admin&apipassword=admin")
+
+      uri = URI.parse(@url + "/?p=core/authenticate")
       raise URIException, "URI format error: #{@url}" unless URI::HTTP === uri
 
       req = Net::HTTP::Get.new(uri.request_uri)

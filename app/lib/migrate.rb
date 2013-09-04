@@ -102,11 +102,11 @@ class MigrationJob
 
         my_repos = rec["RepositoryLimit"] == "1" ? @repo_map.reject{|k,v| rec["Repositories"].include?(k)} : @repo_map
 
-        my_repos.each do |archon_id, aspace_uri|
-          all_groups = @archivesspace.get_json("#{aspace_uri}/groups")
-          # take the lowest group ID
-          old_group_id = rec["Usergroups"].sort.first
-          if (group_codes = map_group_id(old_group_id))
+        # take the lowest group ID
+        old_group_id = rec["Usergroups"].sort.first
+        if (group_codes = map_group_id(old_group_id))
+          my_repos.each do |archon_id, aspace_uri|
+            all_groups = @archivesspace.get_json("#{aspace_uri}/groups")
             group_codes.each do |gc|
               my_groups << all_groups.find{|g| g['group_code'] == gc}['uri']
             end
@@ -136,8 +136,17 @@ class MigrationJob
   end
 
 
+  def bounded_containers(container_data)
+    if container_data.length > 2
+      container_data[-3..-1]
+    else
+      container_data
+    end
+  end
+
+
   def ancestor_containers(obj, batch, container_trees, container_data)
-    return container_data unless obj.parent
+    return bounded_containers(container_data) unless obj.parent
 
     parent_uri = obj.parent['ref']
     parent = batch.find {|objekt| objekt.uri == parent_uri}
@@ -145,7 +154,7 @@ class MigrationJob
       container_data = container_trees[parent.key] + container_data
     end
 
-    return container_data[-3..-1] if container_data.length > 2
+    return bounded_containers(container_data) if container_data.length > 2
 
     ancestor_containers(parent, batch, container_trees, container_data)
   end
