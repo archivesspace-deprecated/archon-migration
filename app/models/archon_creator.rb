@@ -66,27 +66,30 @@ Archon.record_type(:creator) do
 
     obj.uri = obj.class.uri_for(rec.import_id)
 
-    note = model(:note_bioghist).new
     if rec['BiogHist']
+      note = model(:note_bioghist).new
+
       note.subnotes << model(:note_text, 
                              {
                                :content => rec['BiogHist']
                              })
-    end
 
-    if rec['BiogHistAuthor']
-      note.subnotes << model(:note_citation,
-                             {
-                               :content => ["Author: #{rec['BiogHistAuthor']}"]
-                             })
-    end
+      if rec['BiogHistAuthor']
+        note.subnotes << model(:note_citation,
+                               {
+                                 :content => ["Author: #{rec['BiogHistAuthor']}"]
+                               })
+      end
 
-    if rec['Sources']
-      sntype = obj.jsonmodel_type =~ /corporate/ ? :note_abstract : :note_citation
-      note.subnotes << model(sntype,
-                             {
-                               :content => [rec['Sources']]
-                             })
+      if rec['Sources']
+        sntype = obj.jsonmodel_type =~ /corporate/ ? :note_abstract : :note_citation
+        note.subnotes << model(sntype,
+                               {
+                                 :content => [rec['Sources']]
+                               })
+      end
+
+      obj.notes << note
     end
 
     if rec['CreatorRelationships']
@@ -94,10 +97,6 @@ Archon.record_type(:creator) do
         aspace_relationship = create_relationship(obj.jsonmodel_type, archon_relationship)
         obj.related_agents << aspace_relationship unless aspace_relationship.nil?
       end
-    end
-
-    unless note.subnotes.empty?
-      obj.notes << note
     end
 
     yield obj
