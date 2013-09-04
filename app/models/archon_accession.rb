@@ -84,9 +84,10 @@ Archon.record_type(:accession) do
     end
 
     if rec.has_key?('Classifications') && rec['Classifications'].length == 1
-      c = Archon.record_type(:classification).find(rec['Classifications'][0])
-      c_uri = ASpaceImport.JSONModel(c.aspace_type).uri_for(c.import_id)
-      obj.classification = {:ref => c_uri}
+      if (c = Archon.record_type(:classification).find(rec['Classifications'][0]))
+        c_uri = ASpaceImport.JSONModel(c.aspace_type).uri_for(c.import_id)
+        obj.classification = {:ref => c_uri}
+      end
     end
 
     yield obj
