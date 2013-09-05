@@ -2,6 +2,7 @@
 require_relative 'startup'
 require 'net/http/persistent'
 require 'json'
+require 'lrucache'
 
 module Archon
 
@@ -25,6 +26,8 @@ module Archon
                        'archon_*.rb')).each do |file|
       load(file)
     end
+
+    @@cache = LRUCache.new(:max_size => 1000, :default => false)
   end
 
 
@@ -101,7 +104,7 @@ module Archon
     include RecordSetupHelpers
     include EnumLookupHelpers
 
-    def self.each
+    def self.each(instantiate=true)
       raise NoArchonClientException unless Thread.current[:archon_client]
 
       i = 1
@@ -110,11 +113,11 @@ module Archon
         if result_set.is_a?(Array)
           if result_set.length == 2 && result_set[1].empty?
             result_set[0].each do |i, rec|
-              yield self.new(rec)
+              yield (instantiate ? self.new(rec) : rec)
             end
           else
             result_set.each do |rec|
-              yield self.new(rec)
+              yield (instantiate ? self.new(rec) : rec)
             end
           end
         elsif result_set.is_a?(Hash)
@@ -174,21 +177,29 @@ module Archon
 
 
     def self.find(id)
-      id = id.to_s
-      return unfound if id == '0'
-      @cache ||= {}
-      if @cache.has_key?(id)
-        return @cache[id]
+      import_id = import_id_for(id)
+      if @@cache[import_id].nil?
+        return unfound(id)
       end
 
-      each do |rec|
-        if rec["ID"] == id
-          @cache[id] = rec 
-          return @cache[id]
+      if @@cache[import_id]
+        $log.debug("Found cached record: #{rec.inspect}")
+        return rec
+      else
+
+        id = id.to_s
+        return unfound if id == '0'
+
+        each(false) do |data|
+          if data["ID"] == id
+            @@cache[import_id] = self.new(data) 
+            return @@cache[import_id]
+          end
         end
-      end
       
-      return unfound(id)
+        @@cache[import_id] = nil
+        return unfound(id)
+      end
     end
 
 
@@ -268,7 +279,6 @@ module Archon
 
     def initialize(data)
       @data = self.class.filter(data)
-
     end
 
 
@@ -399,7 +409,6 @@ module Archon
 
     def init_session
       $log.debug("Logging into Archon")
-
       uri = URI.parse(@url + "/?p=core/authenticate")
       raise URIException, "URI format error: #{@url}" unless URI::HTTP === uri
 
