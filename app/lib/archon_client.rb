@@ -101,23 +101,27 @@ module Archon
     include RecordSetupHelpers
     include EnumLookupHelpers
 
-    def self.each
+    def self.each(instantiate=true)
       raise NoArchonClientException unless Thread.current[:archon_client]
 
       i = 1
       loop do
         result_set = Thread.current[:archon_client].get_json(endpoint(i))
+        result_size = nil
         if result_set.is_a?(Array)
           if result_set.length == 2 && result_set[1].empty?
+            result_size = result_set[0].count
             result_set[0].each do |i, rec|
-              yield self.new(rec)
+              yield (instantiate ? self.new(rec) : rec)
             end
           else
+            result_size = result_set.count
             result_set.each do |rec|
-              yield self.new(rec)
+              yield (instantiate ? self.new(rec) : rec)
             end
           end
         elsif result_set.is_a?(Hash)
+          result_size = result_set.values.count
           result_set.each {|i, rec| yield self.new(rec) }
         elsif result_set.nil?
           $log.warn("No results found at: #{endpoint(i)}")
@@ -125,7 +129,7 @@ module Archon
         else
           raise "Unintelligible data structure #{result_set.inspect}"
         end
-        break if result_set.count < 100
+        break if result_size < 100 
         i += 100
         raise ArchonPaginationException, "Pagination Limit Exceeded" if i > 10000
       end
