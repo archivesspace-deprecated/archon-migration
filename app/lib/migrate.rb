@@ -160,7 +160,7 @@ class MigrationJob
   end
 
 
-  def resolve_ids_to_links(rec, obj)
+  def resolve_ids_to_links(rec, obj, classification_map)
     rec['Creators'].each do |id|
       import_id = Archon.record_type(:creator).import_id_for(id)
       if @import_map.has_key?(import_id)
@@ -188,6 +188,24 @@ to an Agent. The matching Archon ID for the #{obj.jsonmodel_type} record is
         obj.subjects << {
           :ref => @import_map[import_id]
         }
+      end
+    end
+
+
+    classification_id = if rec.has_key?('Classifications')
+                          rec['Classifications'][0]
+                        elsif rec.has_key?('ClassificationID')
+                          rec['ClassificationID']
+                        else 
+                          nil
+                        end
+
+    if classification_id
+      import_id = Archon.record_type(:classification).import_id_for(classification_id)
+      if classification_map.has_key?(import_id)
+        obj.classification = {:ref => classification_map[import_id]}
+      else
+        $log.warn("Unable to link classification. Record title: #{obj.title}. Archon Classification ID: #{classification_id}")
       end
     end
   end
@@ -220,10 +238,9 @@ to an Agent. The matching Archon ID for the #{obj.jsonmodel_type} record is
     emit_status("Migrating Repository #{archon_repo_id}")
     repo_id = aspace_repo_uri.sub(/.*\//,'')
 
-    @archivesspace.repo(repo_id).import(@y) do |batch|
-
-      # Classifications
-      emit_status("Migrating Classification records", :update)
+    # Classifications
+    emit_status("Migrating Classification records", :update)
+    classification_map = @archivesspace.repo(repo_id).import(@y) do |batch|
       Archon.record_type(:classification).each do |rec|
         rec.class.transform(rec) do |obj|
           # set the creator (can't do this now; aspace issue
@@ -232,16 +249,19 @@ to an Agent. The matching Archon ID for the #{obj.jsonmodel_type} record is
           batch << obj
         end
       end
+    end
 
-      # Accessions
+    # Accessions
+    emit_status("Migrating Accession records", :update)
+    @archivesspace.repo(repo_id).import(@y) do |batch|
       if archon_repo_id == @args[:default_repository]
-        emit_status("Migrating Accession records", :update)
+
         Archon.record_type(:accession).each do |rec|
           # yields agents and accessions, so check type
           rec.class.transform(rec) do |obj|
 
             if obj.jsonmodel_type == 'accession'
-              resolve_ids_to_links(rec, obj)
+              resolve_ids_to_links(rec, obj, classification_map)
               rec.tap_locations do |location, instance|
                 batch << location
                 obj.instances << instance
@@ -252,23 +272,24 @@ to an Agent. The matching Archon ID for the #{obj.jsonmodel_type} record is
           end
         end
       end
+    end
 
-      # Collections
-      Archon.record_type(:collection).each do |rec|
-        next unless rec['RepositoryID'] == archon_repo_id
-        emit_status("Migrating Collection #{rec['ID']}", :update)
-        batch.write!
+    # Collections
+    Archon.record_type(:collection).each do |rec|
+      next unless rec['RepositoryID'] == archon_repo_id
+      emit_status("Migrating Collection #{rec['ID']}", :update)
+      @archivesspace.repo(repo_id).import(@y) do |batch|
 
         rec.class.transform(rec) do |obj|
 
           if obj.jsonmodel_type == 'resource'
-            resolve_ids_to_links(rec, obj)            
+            resolve_ids_to_links(rec, obj, classification_map)  
             rec.tap_locations do |location, instance|
               batch << location
               obj.instances << instance
             end
             $log.debug("process resource tree")
-            process_resource_tree(batch, rec, obj) 
+            process_resource_tree(batch, rec, obj, classification_map) 
           end
 
           batch << obj
@@ -278,7 +299,7 @@ to an Agent. The matching Archon ID for the #{obj.jsonmodel_type} record is
   end
 
 
-  def process_resource_tree(batch, collection_rec, coll_obj)
+  def process_resource_tree(batch, collection_rec, coll_obj, classification_map)
 
     coll_id = collection_rec['ID']
     container_trees = {}
@@ -291,7 +312,7 @@ to an Agent. The matching Archon ID for the #{obj.jsonmodel_type} record is
           end
           container_trees[obj_or_cont[0]] << obj_or_cont[1]
         else
-          resolve_ids_to_links(rec, obj_or_cont)
+          resolve_ids_to_links(rec, obj_or_cont, classification_map)
           batch.unshift(obj_or_cont)
         end
       end
@@ -305,7 +326,7 @@ to an Agent. The matching Archon ID for the #{obj.jsonmodel_type} record is
       digital_object_archon_ids << rec['ID']
 
       rec.class.transform(rec) do |obj|
-        resolve_ids_to_links(rec, obj)
+        resolve_ids_to_links(rec, obj, classification_map)
 
         if rec['CollectionContentID']
           content_obj = batch.find{|o| o.key == rec['CollectionContentID'] && o.jsonmodel_type == 'archival_object'}

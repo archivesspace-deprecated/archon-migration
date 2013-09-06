@@ -22,8 +22,8 @@ Archon.record_type(:collection) do
 
       ids = []
     else
-      c_uri = ASpaceImport.JSONModel(c.aspace_type).uri_for(c.import_id)
-      obj.classification = {:ref => c_uri}
+      # c_uri = ASpaceImport.JSONModel(c.aspace_type).uri_for(c.import_id)
+      # obj.classification = {:ref => c_uri}
       ids = c.resource_identifiers
     end
 
