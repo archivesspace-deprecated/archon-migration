@@ -65,7 +65,7 @@ describe "Archon record mappings" do
         linked['ref'].should eq(location.uri)
         linked['status'].should eq('current')
 
-        instances.last['container']['container_extent'].should eq(loc['Extent'])
+        instance['container']['container_extent'].should eq(record['Locations'][(instances.length - 1)]['Extent'])
       end
 
       instances.count.should eq(record['Locations'].count)
@@ -970,7 +970,7 @@ describe "Archon record mappings" do
 
 
     it "maps 'SortOrder' to 'position'" do
-      @obj.position.should eq(@rec['SortOrder'].to_i)
+      @obj.position.should eq(@rec['SortOrder'].to_i - 1)
     end
 
 

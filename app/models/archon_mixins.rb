@@ -29,7 +29,7 @@ module GenericArchivalObject
         :indicator_1 => loc['Content'],
         :container_locations => [container_location],
         :container_extent => loc['Extent'],
-        :container_extent_type => get_extent_Type(rec['ExtentUnitID'])
+        :container_extent_type => self.class.get_extent_type(loc['ExtentUnitID'])
       }
       
       container = self.class.model(:container, container_data)
