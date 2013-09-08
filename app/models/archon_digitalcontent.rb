@@ -1,5 +1,5 @@
 Archon.record_type(:digitalcontent) do
-  self.plural 'digitalcontent'
+  plural 'digitalcontent'
   no_html 'Title'
 
 

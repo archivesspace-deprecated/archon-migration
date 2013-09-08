@@ -24,18 +24,21 @@ module GenericArchivalObject
       # n.b. aspace backend bug
       container_location.jsonmodel_type = nil
 
-      container = self.class.model(:container,
-                        {
-                          :type_1 => 'other',
-                          :indicator_1 => loc['Content'],
-                          :container_locations => [container_location]
-                        })
+      container_data = {
+        :type_1 => 'other',
+        :indicator_1 => loc['Content'],
+        :container_locations => [container_location],
+        :container_extent => loc['Extent'],
+        :container_extent_type => get_extent_Type(rec['ExtentUnitID'])
+      }
+      
+      container = self.class.model(:container, container_data)
 
       instance = self.class.model(:instance,
-                        {
-                          :container => container,
-                          :instance_type => 'text'
-                        })
+                                  {
+                                    :container => container,
+                                    :instance_type => 'text'
+                                  })
 
       yield location, instance
     end

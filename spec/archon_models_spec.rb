@@ -64,6 +64,8 @@ describe "Archon record mappings" do
         linked = instances.last['container']['container_locations'][0]
         linked['ref'].should eq(location.uri)
         linked['status'].should eq('current')
+
+        instances.last['container']['container_extent'].should eq(loc['Extent'])
       end
 
       instances.count.should eq(record['Locations'].count)

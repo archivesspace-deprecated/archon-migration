@@ -337,7 +337,7 @@ module Archon
       @http_cache ||= LRUCache.new(:max_size => 50, :default => false)
 
       unless @http_cache[endpoint]
-        _get_json(endpoint)
+        @http_cache[endpoint] = _get_json(endpoint)
       end
         
       @http_cache[endpoint]
@@ -420,7 +420,7 @@ module Archon
     end
 
 
-    def _get_json
+    def _get_json(endpoint)
       uri = URI.parse("#{@url}#{endpoint}")
       $log.debug("Prepare Archon request: #{uri.request_uri}")
 
@@ -432,7 +432,7 @@ module Archon
       else
         begin
           json = JSON.parse(response.body)
-          json
+          return json
         rescue JSON::ParserError
           $log.debug(response.body)
           if response.body.match(/No matching record\(s\) found/)
