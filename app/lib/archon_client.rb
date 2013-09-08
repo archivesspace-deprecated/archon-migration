@@ -7,7 +7,7 @@ require 'lrucache'
 module Archon
 
   @@record_types = {}
-  
+
   def self.record_type(key, &block)
     if block_given?
       @@record_types[key] = Class.new(ArchonRecord, &block)
@@ -26,8 +26,6 @@ module Archon
                        'archon_*.rb')).each do |file|
       load(file)
     end
-
-    @@cache = LRUCache.new(:max_size => 1000, :default => false)
   end
 
 
@@ -103,6 +101,7 @@ module Archon
   class ArchonRecord
     include RecordSetupHelpers
     include EnumLookupHelpers
+    @@cache = LRUCache.new(:max_size => 1000, :default => false)
 
     def self.each(instantiate=true)
       raise NoArchonClientException unless Thread.current[:archon_client]
@@ -125,7 +124,9 @@ module Archon
           end
         elsif result_set.is_a?(Hash)
           result_size = result_set.values.count
-          result_set.each {|i, rec| yield self.new(rec) }
+          result_set.each do |i, rec| 
+            yield (instantiate ? self.new(rec) : rec)
+          end
         elsif result_set.nil?
           $log.warn("No results found at: #{endpoint(i)}")
           break
@@ -159,6 +160,7 @@ module Archon
 
     def self.set_type(type)
       @type = type
+      @type_hash = @type.hash
     end
 
 
@@ -187,8 +189,8 @@ module Archon
       end
 
       if @@cache[import_id]
-        $log.debug("Found cached record: #{rec.inspect}")
-        return rec
+        $log.debug("Found cached record: #{@@cache[import_id].inspect}")
+        return @@cache[import_id]
       else
 
         id = id.to_s
@@ -196,7 +198,7 @@ module Archon
 
         each(false) do |data|
           if data["ID"] == id
-            @@cache[import_id] = self.new(data) 
+            @@cache[import_id] = self.new(data)
             return @@cache[import_id]
           end
         end
@@ -278,8 +280,10 @@ module Archon
 
 
     def self.import_id_for(id)
-      "import_#{self.get_type.hash}-#{id}"
+      raise "No @type_hash variable" unless @type_hash
+      "import_#{@type_hash}-#{id}"
     end
+
 
     def initialize(data)
       @data = self.class.filter(data)
@@ -330,27 +334,13 @@ module Archon
 
 
     def get_json(endpoint)
-      uri = URI.parse("#{@url}#{endpoint}")
-      $log.debug("Prepare Archon request: #{uri.request_uri}")
+      @http_cache ||= LRUCache.new(:max_size => 50, :default => false)
 
-      req = Net::HTTP::Get.new(uri.request_uri)
-      response = http_request(uri, req)
-      $log.debug("Raw Archon response : #{response.inspect}")
-      if response.code != '200'
-        raise "ERROR Getting JSON #{response.inspect}"
-      else
-        begin
-          json = JSON.parse(response.body)
-          json
-        rescue JSON::ParserError
-          $log.debug(response.body)
-          if response.body.match(/No matching record\(s\) found/)
-            return nil
-          else
-            raise "Archon response is not JSON!"
-          end
-        end
+      unless @http_cache[endpoint]
+        _get_json(endpoint)
       end
+        
+      @http_cache[endpoint]
     end
 
 
@@ -427,6 +417,31 @@ module Archon
 
       json = JSON::parse(response.body)
       @session = json['session']
+    end
+
+
+    def _get_json
+      uri = URI.parse("#{@url}#{endpoint}")
+      $log.debug("Prepare Archon request: #{uri.request_uri}")
+
+      req = Net::HTTP::Get.new(uri.request_uri)
+      response = http_request(uri, req)
+      $log.debug("Raw Archon response : #{response.inspect}")
+      if response.code != '200'
+        raise "ERROR Getting JSON #{response.inspect}"
+      else
+        begin
+          json = JSON.parse(response.body)
+          json
+        rescue JSON::ParserError
+          $log.debug(response.body)
+          if response.body.match(/No matching record\(s\) found/)
+            return nil
+          else
+            raise "Archon response is not JSON!"
+          end
+        end
+      end
     end
   end
 
