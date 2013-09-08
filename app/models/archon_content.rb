@@ -96,7 +96,7 @@ Archon.record_type(:content) do
     
 
     if rec['SortOrder']
-      obj.position = rec['SortOrder'].to_i
+      obj.position = [rec['SortOrder'].to_i - 1, 0].max
     end
 
     if rec['UniqueID']
