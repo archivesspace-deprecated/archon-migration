@@ -253,9 +253,8 @@ to an Agent. The matching Archon ID for the #{obj.jsonmodel_type} record is
 
     # Accessions
     emit_status("Migrating Accession records", :update)
-    @archivesspace.repo(repo_id).import(@y) do |batch|
-      if archon_repo_id == @args[:default_repository]
-
+    if archon_repo_id == @args[:default_repository]
+      @archivesspace.repo(repo_id).import(@y) do |batch|
         Archon.record_type(:accession).each do |rec|
           # yields agents and accessions, so check type
           rec.class.transform(rec) do |obj|
@@ -294,7 +293,7 @@ to an Agent. The matching Archon ID for the #{obj.jsonmodel_type} record is
 
           batch << obj
         end
-      end
+      end      
     end
   end
 

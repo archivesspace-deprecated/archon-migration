@@ -44,7 +44,7 @@ Archon.record_type(:repository) do
       :fax => rec['Fax'],
       :email => rec['Email'],
       :email_signature => rec["EmailSignature"],
-      :country => rec["Country"]
+      :country => rec["Code"]
     })
 	end
 end

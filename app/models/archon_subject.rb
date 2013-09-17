@@ -27,7 +27,7 @@ Archon.record_type(:subject) do
 
 
   def self.build_terms(rec, terms = [])
-    if rec["Parent"]
+    if rec["Parent"] && rec['ParentID'] != '0'
       terms = build_terms(rec["Parent"], terms)
     end
 

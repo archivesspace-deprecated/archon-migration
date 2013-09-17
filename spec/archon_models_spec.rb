@@ -193,7 +193,7 @@ describe "Archon record mappings" do
 
   describe "Repository" do
     before :all do
-      @rec, results = create_test_set(:repository, %w(ID Name Code Address Address2 City State ZIPCode ZIPPlusFour Phone PhoneExtension Fax Email EmailSignature Country URL))
+      @rec, results = create_test_set(:repository, %w(ID Name Code Address Address2 City State ZIPCode ZIPPlusFour Phone PhoneExtension Fax Email EmailSignature URL))
       @agent = results.shift
       @repo = results.shift
     end
@@ -260,10 +260,6 @@ describe "Archon record mappings" do
       @agent['agent_contacts'][0]['email_signature'].should eq(@rec["EmailSignature"])
     end
 
-
-    it "maps 'Country' to 'repository_with_agent.agent_representation.agent_contacts[0].country" do
-      @agent['agent_contacts'][0]['country'].should eq(@rec["Country"])
-    end
   end
 
 
@@ -779,9 +775,9 @@ describe "Archon record mappings" do
     end
 
 
-    it "maps the first element in 'Languages' to resource.language" do
-      @obj.language.should eq(@rec['Languages'][0])
-    end
+    # it "maps the first element in 'Languages' to resource.language" do
+    #   @obj.language.should eq(@rec['Languages'][0])
+    # end
 
 
     it_behaves_like "archival object location mappings" do

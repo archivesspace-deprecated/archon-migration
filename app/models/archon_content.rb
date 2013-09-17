@@ -43,8 +43,13 @@ Archon.record_type(:content) do
     obj.level = rec['EADLevel']
     obj.title = rec['Title']
 
-    unless rec['ParentID'] == '0'
+    if rec['ParentID'] == '0'
+      if rec['SortOrder']
+        obj.position = [rec['SortOrder'].to_i - 1, 0].max
+      end
+    else
       real_parent_id = nearest_non_physical_ancestor(rec['ParentID'])
+      obj.position = figure_out_position(rec)
       if real_parent_id.nil?
         $log.warn(%{Bad foreign key: can't locate the record associated with 'ParentID' in this record: #{rec.inspect}})
       elsif real_parent_id == '0'
@@ -94,10 +99,6 @@ Archon.record_type(:content) do
 
     obj.publish = rec['Enabled'] == '1' ? true : false
     
-
-    if rec['SortOrder']
-      obj.position = [rec['SortOrder'].to_i - 1, 0].max
-    end
 
     if rec['UniqueID']
       obj.component_id = rec['UniqueID']
@@ -165,11 +166,25 @@ Archon.record_type(:content) do
     return nil if parent.nil?
 
     if parent['ContentType'] == '2'
-#      raise "tree error" if parent['ParentID'] == '0'
       return '0' if parent['ParentID'] == '0'
       nearest_non_physical_ancestor(parent['ParentID'])
     else
       parent_id
+    end
+  end
+
+
+  def self.figure_out_position(rec, position=nil)
+    positon = rec['SortOrder'] unless position
+    parent_id = rec['ParentID']
+
+    return position.to_i if  parent_id == '0' || parent_id.nil?
+
+    parent = find(parent_id)
+    if parent['ContentType'] == '2'
+      figure_out_position(parent, parent['SortOrder'])
+    else
+      return position.to_i
     end
   end
 

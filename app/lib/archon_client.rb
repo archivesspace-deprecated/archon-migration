@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+# -*- Coding: utf-8 -*-
 require_relative 'startup'
 require 'net/http/persistent'
 require 'json'
@@ -101,41 +101,53 @@ module Archon
   class ArchonRecord
     include RecordSetupHelpers
     include EnumLookupHelpers
-    @@cache = LRUCache.new(:max_size => 1000, :default => false)
+    @@cache = LRUCache.new(:max_size => 300, :default => false, :ttl => 600)
 
     def self.each(instantiate=true)
       raise NoArchonClientException unless Thread.current[:archon_client]
 
       i = 1
+
       loop do
-        result_set = Thread.current[:archon_client].get_json(endpoint(i))
+        usecache = (i-1)/100 < Appdata.archon_page_cache_size
+
+        result_set = Thread.current[:archon_client].get_json(endpoint(i), usecache)
         result_size = nil
-        if result_set.is_a?(Array)
-          if result_set.length == 2 && result_set[1].empty?
-            result_size = result_set[0].count
-            result_set[0].each do |i, rec|
-              yield (instantiate ? self.new(rec) : rec)
-            end
-          else
-            result_size = result_set.count
-            result_set.each do |rec|
-              yield (instantiate ? self.new(rec) : rec)
-            end
-          end
-        elsif result_set.is_a?(Hash)
-          result_size = result_set.values.count
-          result_set.each do |i, rec| 
+
+        result_set = normalize_results(result_set)
+
+        result_size = result_set.size
+
+        if result_set
+          result_set.each do |rec|
             yield (instantiate ? self.new(rec) : rec)
           end
+
         elsif result_set.nil?
           $log.warn("No results found at: #{endpoint(i)}")
           break
-        else
-          raise "Unintelligible data structure #{result_set.inspect}"
         end
+
         break if result_size < 100 
         i += 100
-        raise ArchonPaginationException, "Pagination Limit Exceeded" if i > 10000
+        raise ArchonPaginationException, "Pagination Limit Exceeded" if i > 50000
+      end
+    end
+
+
+    def self.normalize_results(result_set)
+      if result_set.is_a?(Array)
+        if result_set.length == 2 && result_set[1].empty?
+          result_set[0].map {|k, v| v}
+        else
+          result_set
+        end
+      elsif result_set.is_a?(Hash)
+        result_set.map {|k,v| v}
+      elsif result_set.nil?
+        []
+      else
+        raise "Unintelligible data structure #{result_set.inspect}"
       end
     end
 
@@ -157,7 +169,7 @@ module Archon
       all
     end
 
-
+    # init the record type class
     def self.set_type(type)
       @type = type
       @type_hash = @type.hash
@@ -202,7 +214,7 @@ module Archon
             return @@cache[import_id]
           end
         end
-      
+
         @@cache[import_id] = nil
         return unfound(id)
       end
@@ -333,14 +345,34 @@ module Archon
     end
 
 
-    def get_json(endpoint)
-      @http_cache ||= LRUCache.new(:max_size => 50, :default => false)
+    def get_json(endpoint, usecache=true)
+      @http_cache ||= LRUCache.new(
+                                   :max_size => Appdata.archon_page_cache_size, 
+                                   :default => false)
 
-      unless @http_cache[endpoint]
+      if @http_cache[endpoint]
+        $log.debug("Using cached page")
+        json_string = @http_cache[endpoint]
+      elsif usecache
+        $log.debug("Caching page")
         @http_cache[endpoint] = _get_json(endpoint)
+        json_string = @http_cache[endpoint]
+      else
+        $log.debug("Fetching page, not caching")
+        json_string = _get_json(endpoint)
       end
-        
-      @http_cache[endpoint]
+
+      begin
+        json = JSON.parse(json_string)
+        return json
+      rescue JSON::ParserError
+        if json_string.match(/No matching record\(s\) found/)
+          return nil
+        else
+          $log.debug("Bad Response String: #{json_string}")
+          raise "Archon response is not JSON!"
+        end
+      end
     end
 
 
@@ -430,17 +462,7 @@ module Archon
       if response.code != '200'
         raise "ERROR Getting JSON #{response.inspect}"
       else
-        begin
-          json = JSON.parse(response.body)
-          return json
-        rescue JSON::ParserError
-          $log.debug(response.body)
-          if response.body.match(/No matching record\(s\) found/)
-            return nil
-          else
-            raise "Archon response is not JSON!"
-          end
-        end
+        return response.body
       end
     end
   end
