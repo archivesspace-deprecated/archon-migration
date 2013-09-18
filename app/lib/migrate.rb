@@ -1,10 +1,12 @@
 require_relative 'startup'
 require_relative 'archon_client'
 require_relative 'archivesspace_client'
+require_relative 'migration_helpers'
 require 'zip/zip'
 
 
 class MigrationJob
+  include MigrationHelpers
 
   def initialize(params = {})
     @args = params
@@ -69,61 +71,14 @@ class MigrationJob
     Thread.current[:selected_repo_id] = 1
 
     # 1: Repositories
-    emit_status("Migrating Repository records")
-
-    save_map = @archivesspace.import(@y) do |batch|
-
-      [
-       :repository
-      ].each do |key|
-
-        Archon.record_type(key).each do |rec|
-          rec.class.transform(rec) do |obj|
-            batch << obj
-          end
-        end
-      end
-    end
-
-    @repo_map = save_map.select{|k, v| v =~ /repositories/}
+    repo_and_agent_map = migrate_repo_records
+    @repo_map = repo_and_agent_map.select {|k, v| v =~ /repositories/}
 
     # 2: Users (must use dedicated controller)
-    emit_status("Migrating User records")
+    migrate_users
 
-    Archon.record_type(:user).each do |rec|
-
-      rec.class.transform(rec) do |obj|
-        my_groups = []
-
-        # superusers
-        if rec["Usergroups"].include?("1")
-          my_groups << "/repositories/1/groups/1"
-        end        
-
-        my_repos = rec["RepositoryLimit"] == "1" ? @repo_map.reject{|k,v| rec["Repositories"].include?(k)} : @repo_map
-
-        # take the lowest group ID
-        old_group_id = rec["Usergroups"].sort.first
-        if (group_codes = map_group_id(old_group_id))
-          my_repos.each do |archon_id, aspace_uri|
-            all_groups = @archivesspace.get_json("#{aspace_uri}/groups")
-            group_codes.each do |gc|
-              my_groups << all_groups.find{|g| g['group_code'] == gc}['uri']
-            end
-          end
-        end
-
-        obj.uri = nil
-        result = obj.save(:password => "password", "groups[]" => my_groups)
-        
-        $log.debug("Save User result: #{result}")
-      end
-    end
-
-    emit_status("Migrating Creator and Subject records")
     # 3: Global scope objects
-
-    @import_map = migrate_creators_and_subjects
+    @globals_map = migrate_creators_and_subjects
 
     # 4: Iterate through repositories
     @repo_map.each do |archon_repo_id, aspace_repo_uri|
@@ -131,17 +86,7 @@ class MigrationJob
     end
 
     # 5: Package Digital File content for Download
-    emit_status("Packaging digital files for download")
     package_digital_files
-  end
-
-
-  def bounded_containers(container_data)
-    if container_data.length > 2
-      container_data[-3..-1]
-    else
-      container_data
-    end
   end
 
 
@@ -163,9 +108,9 @@ class MigrationJob
   def resolve_ids_to_links(rec, obj, classification_map)
     rec['Creators'].each do |id|
       import_id = Archon.record_type(:creator).import_id_for(id)
-      if @import_map.has_key?(import_id)
+      if @globals_map.has_key?(import_id)
         obj.linked_agents << {
-          :ref => @import_map[import_id],
+          :ref => @globals_map[import_id],
           :role => 'creator'
         }
       else
@@ -178,7 +123,7 @@ to an Agent. The matching Archon ID for the #{obj.jsonmodel_type} record is
 
     rec['Subjects'].each do |id|
       import_id = Archon.record_type(:subject).import_id_for(id)
-      agent_or_subject_ref = @import_map[import_id]
+      agent_or_subject_ref = @globals_map[import_id]
       if agent_or_subject_ref =~ /agents/
         obj.linked_agents << {
           :ref => agent_or_subject_ref,
@@ -186,49 +131,19 @@ to an Agent. The matching Archon ID for the #{obj.jsonmodel_type} record is
         }
       else 
         obj.subjects << {
-          :ref => @import_map[import_id]
+          :ref => @globals_map[import_id]
         }
       end
     end
 
+    classification_import_id = get_classification_import_id(rec)
 
-    classification_id = if rec.has_key?('Classifications')
-                          rec['Classifications'][0]
-                        elsif rec.has_key?('ClassificationID')
-                          rec['ClassificationID']
-                        else 
-                          nil
-                        end
-
-    if classification_id
-      import_id = Archon.record_type(:classification).import_id_for(classification_id)
-      if classification_map.has_key?(import_id)
-        obj.classification = {:ref => classification_map[import_id]}
+    if classification_import_id
+      if classification_map.has_key?(classification_import_id)
+        obj.classification = {:ref => classification_map[classification_import_id]}
       else
         $log.warn("Unable to link classification. Record title: #{obj.title}. Archon Classification ID: #{classification_id}")
       end
-    end
-  end
-
-
-  def emit_status(msg, type=:status)
-    @y << JSON.generate({:type => type, :body => msg}) + "---\n"
-  end
-
-
-  def map_group_id(old_group_id)
-    case old_group_id
-    when "1"
-      %w(repository-managers repository-project-managers)
-    when "2"
-      %w(repository-advanced-data-entry)
-    when "3"
-      %w(repository-basic-data-entry)
-    when "4"
-      %w(repository-viewers)
-    else
-      $log.warn("Unable to interpet Archon Group ID: #{old_group_id}. Ignoring")
-      false
     end
   end
 
@@ -239,38 +154,11 @@ to an Agent. The matching Archon ID for the #{obj.jsonmodel_type} record is
     repo_id = aspace_repo_uri.sub(/.*\//,'')
 
     # Classifications
-    emit_status("Migrating Classification records", :update)
-    classification_map = @archivesspace.repo(repo_id).import(@y) do |batch|
-      Archon.record_type(:classification).each do |rec|
-        rec.class.transform(rec) do |obj|
-          # set the creator (can't do this now; aspace issue
-          # creator_uri = @import_map[rec.import_id]
-          # obj.creator = {'ref' => creator_uri}
-          batch << obj
-        end
-      end
-    end
+    classification_map = migrate_classifications(repo_id)
 
     # Accessions
-    emit_status("Migrating Accession records", :update)
     if archon_repo_id == @args[:default_repository]
-      @archivesspace.repo(repo_id).import(@y) do |batch|
-        Archon.record_type(:accession).each do |rec|
-          # yields agents and accessions, so check type
-          rec.class.transform(rec) do |obj|
-
-            if obj.jsonmodel_type == 'accession'
-              resolve_ids_to_links(rec, obj, classification_map)
-              rec.tap_locations do |location, instance|
-                batch << location
-                obj.instances << instance
-              end
-            end
-
-            batch << obj
-          end
-        end
-      end
+      migrate_accessions(repo_id, classification_map)
     end
 
     # Collections
@@ -321,6 +209,7 @@ to an Agent. The matching Archon ID for the #{obj.jsonmodel_type} record is
 
     digital_object_archon_ids = []
     Archon.record_type(:digitalcontent).each do |rec|
+
       next unless rec['CollectionID'] == coll_id            
       digital_object_archon_ids << rec['ID']
 
@@ -415,7 +304,69 @@ to an Agent. The matching Archon ID for the #{obj.jsonmodel_type} record is
   end
 
 
+  def package_digital_files
+    emit_status("Packaging digital files for download")
+    directory = Dir.tmpdir + "/archon_bitstreams/"
+    zipfile_name = File.join(File.dirname(__FILE__), '../', 'public', 'bitstreams.zip')
+   
+    Zip::ZipFile.open(zipfile_name, Zip::ZipFile::CREATE) do |zipfile|
+      Dir.glob("#{directory}*.*").each do |file|
+        zipfile.add(file.sub(directory, ''), file)
+      end
+    end
+  end
+
+
+  def migrate_repo_records
+    emit_status("Migrating Repository records")
+    @archivesspace.import(@y) do |batch|
+
+      Archon.record_type(:repository).each do |rec|
+        rec.class.transform(rec) do |obj|
+          batch << obj
+        end
+      end
+    end
+  end
+
+
+  def migrate_users
+    emit_status("Migrating User records")
+
+    Archon.record_type(:user).each do |rec|
+
+      rec.class.transform(rec) do |obj|
+        my_groups = []
+
+        # superusers
+        if rec["Usergroups"].include?("1")
+          my_groups << "/repositories/1/groups/1"
+        end        
+
+        my_repos = rec["RepositoryLimit"] == "1" ? @repo_map.reject{|k,v| rec["Repositories"].include?(k)} : @repo_map
+
+        # take the lowest group ID
+        old_group_id = rec["Usergroups"].sort.first
+        if (group_codes = map_group_id(old_group_id))
+          my_repos.each do |archon_id, aspace_uri|
+            all_groups = @archivesspace.get_json("#{aspace_uri}/groups")
+            group_codes.each do |gc|
+              my_groups << all_groups.find{|g| g['group_code'] == gc}['uri']
+            end
+          end
+        end
+
+        obj.uri = nil
+        result = obj.save(:password => "password", "groups[]" => my_groups)
+        
+        $log.debug("Save User result: #{result}")
+      end
+    end
+  end
+
+
   def migrate_creators_and_subjects
+    emit_status("Migrating Creator and Subject records")
     import_map = @archivesspace.import(@y) do |batch|
       [
        :subject,
@@ -435,13 +386,38 @@ to an Agent. The matching Archon ID for the #{obj.jsonmodel_type} record is
   end
 
 
-  def package_digital_files
-    directory = Dir.tmpdir + "/archon_bitstreams/"
-    zipfile_name = File.join(File.dirname(__FILE__), '../', 'public', 'bitstreams.zip')
-   
-    Zip::ZipFile.open(zipfile_name, Zip::ZipFile::CREATE) do |zipfile|
-      Dir.glob("#{directory}*.*").each do |file|
-        zipfile.add(file.sub(directory, ''), file)
+  def migrate_classifications(repo_id)
+    emit_status("Migrating Classification records", :update)
+    @archivesspace.repo(repo_id).import(@y) do |batch|
+      Archon.record_type(:classification).each do |rec|
+        rec.class.transform(rec) do |obj|
+          # set the creator (can't do this now; aspace issue
+          # creator_uri = @globals_map[rec.import_id]
+          # obj.creator = {'ref' => creator_uri}
+          batch << obj
+        end
+      end
+    end
+  end
+
+
+  def migrate_accessions(repo_id, classification_map)
+    emit_status("Migrating Accession records", :update)
+    @archivesspace.repo(repo_id).import(@y) do |batch|
+      Archon.record_type(:accession).each do |rec|
+        # yields agents and accessions, so check type
+        rec.class.transform(rec) do |obj|
+
+          if obj.jsonmodel_type == 'accession'
+            resolve_ids_to_links(rec, obj, classification_map)
+            rec.tap_locations do |location, instance|
+              batch << location
+              obj.instances << instance
+            end
+          end
+
+          batch << obj
+        end
       end
     end
   end
