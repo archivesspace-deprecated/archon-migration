@@ -171,7 +171,7 @@ module ArchivesSpace
 
 
     def prepare_map(save_response)
-      # Hash {Archon_id => ASpace_id}
+      # Hash {Archon_id => ASpace_uri}
       Hash[save_response.map {|k,v| [k.sub(/.*\//,''), v[0]]}]
     end
 

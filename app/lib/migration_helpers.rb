@@ -21,13 +21,13 @@ module MigrationHelpers
   end
 
 
-  def bounded_containers(container_data)
-    if container_data.length > 2
-      container_data[-3..-1]
-    else
-      container_data
-    end
-  end
+  # def bounded_containers(container_data)
+  #   if container_data.length > 2
+  #     container_data[-3..-1]
+  #   else
+  #     container_data
+  #   end
+  # end
 
 
   def get_classification_import_id(rec)
@@ -40,5 +40,10 @@ module MigrationHelpers
          end
 
     id ? Archon.record_type(:classification).import_id_for(id) : nil
+  end
+
+
+  def import_id_for(type, id)
+    Archon.record_type(type).import_id_for(id)
   end
 end

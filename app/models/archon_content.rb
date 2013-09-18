@@ -61,9 +61,6 @@ Archon.record_type(:content) do
       end
     end
 
-    resource_id = Archon.record_type(:collection).import_id_for(@cid)
-    resource_uri = ASpaceImport.JSONModel(:resource).uri_for(resource_id)
-    obj.resource = {:ref => resource_uri}
 
     if rec['PrivateTitle']
       obj.notes << model(:note_singlepart,
@@ -149,14 +146,46 @@ Archon.record_type(:content) do
 
   def self.to_container_data(rec)
     data_key = case rec['ContentType']
-               when '2'; rec['ParentID']
+               when '2'; nearest_non_physical_ancestor(rec['ParentID'])
                when '3'; rec['ID']
                end
 
-    [data_key, {
-       :type => get_container_type(rec['ContainerTypeID']),
-       :indicator => rec['ContainerIndicator']
-     }]
+    container_data = [{
+      :type => get_container_type(rec['ContainerTypeID']),
+      :indicator => rec['ContainerIndicator']
+    }]
+
+    [data_key, build_container_set(container_data, next_physical_ancestor(rec))]
+  end
+
+
+  def self.build_container_set(container_data, rec=nil)
+    if rec 
+      container_data.unshift({
+                               :type => get_container_type(rec['ContainerTypeID']),
+                               :indicator => rec['ContainerIndicator']
+                             })
+      next_rec = container_data.length > 2 ? nil : next_physical_ancestor(rec)
+      build_container_set(container_data, next_rec)
+    else
+      container_data
+    end
+  end
+
+
+  def self.next_physical_ancestor(rec)
+    parent_id = rec['ParentID']
+    return nil if parent_id == '0'
+
+    parent = find(parent_id)
+
+    return nil if parent.nil?
+
+    if parent['ContentType'] == '1'
+      next_physical_ancestor(parent)
+    else
+      parent
+    end
   end
 
 
