@@ -57,8 +57,8 @@ contains data.
 Do not allow Archon users to create or edit data while the migration is running.
 
 You can optimize the performance of the migration tool by adjusting the number of
-pages of Archon data that are cached. For example, if your largest Archon collection contains 20,000 Content records, and you are running the migration tool in an environment that can afford around 300MB of memory, you might want to add this line to your config_local.rb file:
+pages of Archon data that are cached. For example, if your largest Archon collection contains 50,000 Content records, and you are running the migration tool in an environment that can afford around 300MB of memory, you might want to add this line to your config_local.rb file:
 
-    Appdata.archon_page_cache_size 200
+    Appdata.archon_page_cache_size 500
 
 There's no (or little) advantage to setting the cache size to a value larger than the number of Content records in the largest Collection, divided by 100.

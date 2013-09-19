@@ -51,7 +51,8 @@ post '/jobs' do
 
   Enumerator.new do |y|
     begin
-      $syslog = Logger.new(Appdata.app_dir + "/public/log.txt")
+      stamp = Time.now.strftime("%Y-%m-%d-%H-%M-%S")
+      $syslog = Logger.new(Appdata.app_dir + "/public/log-#{stamp}.txt")
       $log = MigrationLog.new(y, $syslog)
       m = MigrationJob.new(params[:job])
       m.migrate(y)

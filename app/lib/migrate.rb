@@ -332,7 +332,7 @@ class MigrationJob
 
 
   def migrate_digital_objects(repo_id, coll_id, classification_map)
-    emit_status("Migrating digital objects for Collection #{coll_id}")
+    emit_status("Migrating digital objects for Collection #{coll_id}", :update)
     instance_map = {}
     
     do_map = @aspace.repo(repo_id).import(@y) do |batch|
