@@ -76,7 +76,7 @@ module GenericArchivalObject
       end
 
       #fallback
-      unless obj.coordinate_1_indicator
+      unless obj.coordinate_1_indicator && !obj.coordinate_1_indicator.empty?
         obj.coordinate_1_indicator = "not recorded"
         obj.coordinate_1_label = "RangeValue"
       end

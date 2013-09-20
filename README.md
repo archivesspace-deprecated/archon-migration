@@ -51,6 +51,10 @@ A typical migration can take several hours and will cause ArchivesSpace's
 indexer to get backed up. Migrated records may not appear right away in browse or search results in ArchivesSpace. Consider running ArchivesSpace with the indexer
 turned off to speed up the migration process.
 
+A large migration may fail because of an expiration of the migration tool's session in ArchivesSpace. Avoid this by setting a 10 hour session expiration threshold in the ArchivesSpace configuration file:
+
+	AppConfig[:session_expire_after_seconds] = 36000
+
 Do not run a migration process against an ArchivesSpace instance that already
 contains data.
 
@@ -62,3 +66,4 @@ pages of Archon data that are cached. For example, if your largest Archon collec
     Appdata.archon_page_cache_size 500
 
 There's no (or little) advantage to setting the cache size to a value larger than the number of Content records in the largest Collection, divided by 100.
+

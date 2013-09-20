@@ -189,7 +189,10 @@ module Archon
                    :warn
                  end
 
-      $log.send(loglevel, "Couldn't find a #{@type} with the ID: #{id}")
+      unless id == '0'
+        $log.send(loglevel, "Couldn't find a #{@type} with the ID: #{id}")
+      end
+
       nil
     end
 
@@ -201,7 +204,6 @@ module Archon
       end
 
       if @@cache[import_id]
-        $log.debug("Found cached record: #{@@cache[import_id].inspect}")
         return @@cache[import_id]
       else
 

@@ -53,6 +53,7 @@ Archon.record_type(:creator) do
                                        }))
     else
       $log.warn("Couldn't create an agent record from: #{rec.inspect}")
+      return nil
     end
 
     if rec['Dates']
@@ -136,7 +137,8 @@ Archon.record_type(:creator) do
                   :relator => 'is_parent_of'
                  })
         else
-          raise "unable to related these records"
+          $log.warn("Unable to create a parent-child relationship for Creator #{archon_id} - this creator is not a person.") 
+          nil
         end
       end
     end
