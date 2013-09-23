@@ -1,0 +1,22 @@
+
+.error {
+    background: #faa;
+}
+
+#status-console {
+    font-family: Consolas, 'Liberation Mono', Courier, monospace;
+    background: #ddd;
+}
+
+p {
+    padding-left: 10px;
+    padding-right: 10px;
+}
+
+p.aspace {
+    color: blue;
+}
+
+p.warn {
+    color: red;
+}

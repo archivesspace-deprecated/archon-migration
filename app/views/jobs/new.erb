@@ -1,0 +1,53 @@
+<!--<h1>New Migration Job</h1>-->
+<form action="/jobs" method="post" class="pure-form pure-form-aligned" id="migration-form">
+  <h3>Archon Connection</h3>
+  <fieldset>
+
+    <div class="pure-control-group">
+      <label for="job_archon_url">Archon URL:</label>
+      <input id="job_archon_url" class="pure-input-1-2" name="job[archon_url]" type="text" value="<%= Appdata.default_archon_url %>" required/> 
+    </div>
+    <div class="pure-control-group">
+      <label for="job_archon_user">Archon User:</label>
+      <input id="job_archon_user" name="job[archon_user]" type="text" value="<%= Appdata.default_archon_user %>" required/> 
+    </div>
+    <div class="pure-control-group">
+      <label for="job_archon_password">Archon Password:</label>
+      <input id="job_archon_password" name="job[archon_password]" type="password" value="" required/>
+    </div>
+  </fieldset>
+  <h3>ASpace Connection</h3>
+  <fieldset>
+    <div class="pure-control-group">
+      <label for="job_aspace_url">ASpace URL:</label>
+      <input id="job_aspace_url" class="pure-input-1-2" name="job[aspace_url]" type="text" value="<%= Appdata.default_aspace_url %>" required/> 
+    </div>
+    <div class="pure-control-group">
+      <label for="job_aspace_user">Aspace User:</label>
+      <input id="job_aspace_user" name="job[aspace_user]" type="text" value="<%= Appdata.default_aspace_user %>" required/>
+    </div>
+    <div class="pure-control-group">
+      <label for="job_aspace_password">Aspace Password:</label>
+      <input id="job_aspace_password" name="job[aspace_password]" type="password" value="" required/>
+    </div>
+
+  </fieldset>
+  <h3>Options</h3>
+  <fieldset>
+    <div class="pure-control-group">
+      <label for="do_baseurl">Digital Object Base URL</label>
+      <input id="do_baseurl" class="pure-input-1-2" name="job[do_baseurl]" type="text" value="" required/>
+
+    <label for="nodourl"> Leave blank
+</label>
+<input id="nodourl" type="checkbox" >
+    </div>
+  </fieldset>
+  <div class="pure-controls">
+    <button type="submit" class="pure-button" id="start-migration">Start Migration</button>
+    <br />
+    <a href="bitstreams.zip" class="pure-button pure-button-disabled" id="download-files">Download Archon digital files</a>
+    <br />
+    <a href="log.txt" target="new" class="pure-button pure-button-disabled" id="download-log">Download Migration Log</a>
+  </div>
+</form> 
