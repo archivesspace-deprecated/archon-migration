@@ -290,6 +290,11 @@ Archon.record_type(:collection) do
      {:archon_type => 'Scope',
        :note_type => 'scopecontent',
        :label => "Scope and Contents"
+     },
+
+     {:archon_type => 'ProcessingInfo',
+       :note_type => 'processinfo',
+       :label => "Processing Information"
      }
 
     ]
