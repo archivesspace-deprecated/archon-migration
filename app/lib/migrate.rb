@@ -56,16 +56,19 @@ class MigrationJob
   end
 
 
-  def connection_check
-    if @archon.has_session? && @aspace.has_session?
-      $log.debug("All systems go")
-    else
-      $log.warn("Not connected")
+  def all_good_or_die
+    if !@archon.has_session? 
+      raise "No Archon connection"
+    elsif !@aspace.has_session?
+      raise "No ArchivesSpace connection"
+    elsif !@aspace.database_empty?
+      raise "The ArchivesSpace instance you are connecting to is not empty. Please backup and delete the database"
     end
   end
 
 
   def migrate(y)
+    all_good_or_die
     @y = y
     Thread.current[:selected_repo_id] = 1
 

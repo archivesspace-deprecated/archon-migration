@@ -4,13 +4,15 @@ $(document).ready(function(){
     beforeSubmit: function(arr, $form, options){
       $form.validate();
       $('#start-migration').toggleClass('pure-button-disabled');
+      $('#download-files').addClass('pure-button-disabled');
+      $('#download-log').addClass('pure-button-disabled');
       $('#status-console').empty();
 //      $('#status-console').append("<progress></progress>");
     },
     success:      function(responseText, statusText, xhr, $form){
       $('#start-migration').toggleClass('pure-button-disabled');
-      $('#download-files').toggleClass('pure-button-disabled');
-      $('#download-log').toggleClass('pure-button-disabled');
+      $('#download-files').removeClass('pure-button-disabled');
+      $('#download-log').removeClass('pure-button-disabled');
     },
     xhr:          function(){
       var xhr = new XMLHttpRequest();
@@ -58,6 +60,8 @@ function updateStatus(update, emitter){
       emitter.show_progress(update.ticks, update.total);
     } else if (update.type == 'update') {
       emitter.show_progress_message(update.body);
+    } else if (update.type == 'log') {
+      $('#download-log').attr('href', update.file);
     } else {
       // todo: toggle in progress bar
     }
