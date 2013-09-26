@@ -89,6 +89,7 @@ class MigrationJob
 
     # 5: Package Digital File content for Download
     package_digital_files
+    emit_status("Migration complete. Download the log to review warnings")
   end
 
 

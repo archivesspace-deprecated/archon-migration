@@ -35,13 +35,10 @@ $(document).ready(function(){
     // If checked
     if ($("#nodourl").is(":checked")) {
     //show the hidden div
-      console.log("remove");
       $("#do_baseurl").removeAttr('required');
-      console.log($("#do_baseurl").attr('required'));
     }  else {
       //otherwise, hide it
       $("#do_baseurl").attr("required", "true");
-      console.log($("#do_baseurl").attr('required'));
     }
   });
 
@@ -49,7 +46,7 @@ $(document).ready(function(){
 
 
 function updateStatus(update, emitter){
-    console.log(update);
+//    console.log(update);
     if (update.type == 'error') {
       emitter.show_error(update.body);
     } else if (update.type == 'status') {
@@ -72,11 +69,12 @@ function StatusEmitter() {
   var console = $('#status-console');
 
   this.refresh_status = function(status, source){
-    $("#status-console p:last .progress").html(' 100%');
-    if (source == 'aspace' && $("#status-console p:last").hasClass('aspace')) {
-      $("#status-console p:last").html(status);
+    if (source == 'aspace') {
+      $("#status-console div:last p.aspace").html(status);
     } else {
-      console.append("<p class=\"status " + source + "\">"+status+"</p>");
+      $("#status-console div:last p.aspace").remove();
+      $("#status-console div:last span.progress-message").html(" - Done");
+      console.append("<div class=\"status " + source + "\"><p class=\"main\">"+status+"</p><p class=\"aspace\"></p></div>");
     }
   }
 
@@ -91,13 +89,13 @@ function StatusEmitter() {
 
   this.show_progress = function(ticks, total) {
     var percent = Math.round((ticks / total) * 100);
-    $("#status-console p:last .progress").remove();
-    $("#status-console p:last").append("<span class='progress'> " + percent + "%</span>");
+    $("#status-console div:last span.progress").remove();
+    $("#status-console div:last p:last").append("<span class='progress'> " + percent + "%</span>");
   }
 
   this.show_progress_message = function(body) {
-    $("#status-console p:last .progress-message").remove();
-    $("#status-console p:last").append("<span class='progress-message'> - " + body + "</span>");
+    $("#status-console div:last p:first span.progress-message").remove();
+    $("#status-console div:last p:first").append("<span class='progress-message'> - " + body + "</span>");
   }
 }
 
