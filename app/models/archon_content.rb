@@ -21,7 +21,7 @@ Archon.record_type(:content) do
     end
   end
 
-
+ 
   def self.transform(rec)
     case rec['ContentType']
     when '1'
@@ -204,7 +204,7 @@ Archon.record_type(:content) do
 
 
   def self.figure_out_position(rec, position=nil)
-    positon = rec['SortOrder'] unless position
+    position = rec['SortOrder'] unless position
     parent_id = rec['ParentID']
 
     return position.to_i if  parent_id == '0' || parent_id.nil?
