@@ -210,7 +210,9 @@ Archon.record_type(:content) do
     return position.to_i if  parent_id == '0' || parent_id.nil?
 
     parent = find(parent_id)
-    if parent['ContentType'] == '2'
+    if parent.nil?
+      return nil # orphaned component
+    elsif parent['ContentType'] == '2'
       figure_out_position(parent, parent['SortOrder'])
     else
       return position.to_i
