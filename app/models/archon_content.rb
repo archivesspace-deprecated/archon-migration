@@ -90,7 +90,8 @@ Archon.record_type(:content) do
                            :subnotes => [model(:note_text,
                                               {
                                                 :content => rec['Description']
-                                               })]
+                                               })],
+                           :label => "Scope and Contents"
                          })
     end
 

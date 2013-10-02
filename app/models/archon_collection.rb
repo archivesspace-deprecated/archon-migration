@@ -87,15 +87,6 @@ Archon.record_type(:collection) do
     obj.finding_aid_author = rec['FindingAidAuthor']
 
     #Notes
-    # if rec['Scope']
-    #   obj.notes << model(:note_singlepart,
-    #                      {
-    #                        :content => [rec['Scope']],
-    #                        :label => 'Scope and Contents',
-    #                        :type => unspecified('abstract')
-    #                      })
-    # end
-
     if rec['Abstract']
       obj.notes << model(:note_singlepart,
                          {
