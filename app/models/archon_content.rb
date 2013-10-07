@@ -26,6 +26,7 @@ Archon.record_type(:content) do
     case rec['ContentType']
     when '1'
       yield to_archival_object(rec)
+      yield to_container_data(rec, false)
     when '2'
       yield to_container_data(rec)
     when '3'
@@ -106,7 +107,6 @@ Archon.record_type(:content) do
       obj.other_level = rec['OtherLevel']
     end
 
-
     unless rec['Notes'].is_a?(Array) && rec['Notes'].empty?
       rec['Notes'].values.each do |note_data|
         model_type, note_type  = determine_note_type(note_data['NoteType'])
@@ -145,16 +145,16 @@ Archon.record_type(:content) do
   end
 
 
-  def self.to_container_data(rec)
-    data_key = case rec['ContentType']
-               when '2'; nearest_non_physical_ancestor(rec['ParentID'])
-               when '3'; rec['ID']
-               end
+  def self.to_container_data(rec, ima_container=true)
+    data_key = rec['ID']
 
-    container_data = [{
-      :type => get_container_type(rec['ContainerTypeID']),
-      :indicator => rec['ContainerIndicator']
-    }]
+    container_data = []
+    if ima_container
+      container_data << {
+        :type => get_container_type(rec['ContainerTypeID']),
+        :indicator => rec['ContainerIndicator']
+      }
+    end
 
     [data_key, build_container_set(container_data, next_physical_ancestor(rec))]
   end
