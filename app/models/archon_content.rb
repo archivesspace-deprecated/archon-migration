@@ -23,10 +23,12 @@ Archon.record_type(:content) do
 
  
   def self.transform(rec)
+    yield rec['ID']
     case rec['ContentType']
     when '1'
       yield to_archival_object(rec)
-      yield to_container_data(rec, false)
+      cd = to_container_data(rec, false)
+      yield cd unless cd[1].empty?
     when '2'
       yield to_container_data(rec)
     when '3'
