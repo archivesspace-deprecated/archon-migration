@@ -23,7 +23,6 @@ Archon.record_type(:content) do
 
  
   def self.transform(rec)
-    yield rec['ID']
     case rec['ContentType']
     when '1'
       yield to_archival_object(rec)
