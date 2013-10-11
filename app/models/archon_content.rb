@@ -205,7 +205,7 @@ Archon.record_type(:content) do
   end
 
 
-  def self.figure_out_position(rec, position=nil)
+  def self.figure_out_position(rec, position=nil, xtra = [])
     position = rec['SortOrder'] unless position
     parent_id = rec['ParentID']
 
@@ -215,8 +215,13 @@ Archon.record_type(:content) do
     if parent.nil?
       return nil # orphaned component
     elsif parent['ContentType'] == '2'
-      figure_out_position(parent, parent['SortOrder'])
+      xtra << rec['SortOrder']
+      figure_out_position(parent, parent['SortOrder'], xtra)
     else
+      while xtra.length > 0 do
+
+        position = "#{position}#{pad(xtra.shift, 4)}" # assume no physical-only node has > 9999 kids
+      end
       return position.to_i
     end
   end
@@ -235,5 +240,13 @@ Archon.record_type(:content) do
     else
       [:note_multipart, "odd"] # ????
     end
+  end
+
+
+  def self.pad(val, size)
+    val = val.to_s
+    (size - val.length).times { val = "0#{val}" }
+
+    val
   end
 end
