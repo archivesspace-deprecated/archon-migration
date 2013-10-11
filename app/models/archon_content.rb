@@ -218,10 +218,15 @@ Archon.record_type(:content) do
       xtra << rec['SortOrder']
       figure_out_position(parent, parent['SortOrder'], xtra)
     else
+      normalize_padding = !xtra.empty?
       while xtra.length > 0 do
-
         position = "#{position}#{pad(xtra.shift, 4)}" # assume no physical-only node has > 9999 kids
       end
+
+      if normalize_padding
+        position = pad(position, 15) # in case paddings are uneven
+      end
+
       return position.to_i
     end
   end
