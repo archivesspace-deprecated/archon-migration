@@ -218,15 +218,16 @@ Archon.record_type(:content) do
       xtra << rec['SortOrder']
       figure_out_position(parent, parent['SortOrder'], xtra)
     else
-      normalize_padding = !xtra.empty?
       while xtra.length > 0 do
-        position = "#{position}#{pad(xtra.shift, 4)}" # assume no physical-only node has > 9999 kids
+        # assume no physical-only node has > 9999 kids
+        position = "#{position}#{pad(xtra.shift, 4)}" 
       end
 
-      if normalize_padding
-        position = pad(position, 15) # in case paddings are uneven
-      end
-
+      # normalize all integers to 13 decimals
+      # and assume no not-merely-physical node
+      # will have 3 physical-only ancestors in a row
+      position = pad(position, 13, :right) 
+    
       return position.to_i
     end
   end
@@ -248,10 +249,18 @@ Archon.record_type(:content) do
   end
 
 
-  def self.pad(val, size)
+  def self.pad(val, size, side = :left)
     val = val.to_s
-    (size - val.length).times { val = "0#{val}" }
+    padding = ""
+    (size - val.length).times { padding << "0" }
 
-    val
+    case side
+    when :left
+      padding + val
+    when :right
+      val + padding
+    else
+      raise" Bad pad, Dad"
+    end
   end
 end
