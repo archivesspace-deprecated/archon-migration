@@ -1,19 +1,31 @@
 Archon2ArchivesSpace README
 ================
+# System Requirements
+
+You will need to have Ruby 1.9.3 installed to run this service
+
+	ruby --version
+    # example output: ruby 1.9.3p429 (2013-05-15 revision 40747)
+
+If your system has a different version of Ruby installed, the simplest way to
+leave your system intact and get 1.9.3 is to install RVM (https://rvm.io/).
+
 # Installing the service
 
-Checkout the project from Github:
+Download a release or just checkout the project from Github:
 
     git clone https://github.com/lcdhoffman/archon-migration.git
     cd archon-migration
 
 Run a script to download the necessary ArchivesSpace libraries:
 
-./scripts/import\_client\_libs.sh v1.0.0RC1
+	./scripts/import\_client\_libs.sh v1.0.0RC1
 
 This will attempt to download the ArchivesSpace source code for ArchivesSpace v1.0.0RC1.
+*Note: the service ships with libraries for ArchivesSpace 1.0.0, so you can skip this step
+if you are targeting 1.0.0.
 
-Install the gems in the Gemfile:
+Install the application dependencies listed in the Gemfile:
 
     gem install bundler
     bundle install
@@ -22,7 +34,17 @@ Now run the application:
 
     ruby app/main.rb
 
-(You'll probably want to daemonize or disown this.)
+The service runs on port 4568 by default. To change this:
+
+	touch config/config_local.rb
+    echo "Appdata.port_number YOUR_FAVORITE_PORT_HERE" >> config/config_local.rb
+
+# Daemonizing the Service
+
+The service can be daemonized in several ways. One option is to install a native
+ruby solution such as the Daemonize gem (http://daemons.rubyforge.org/). However,
+since the service is intended to be short-lived, it may be easiest to simply
+send the process to the background and disown it.
 
 # Using the Service
 
@@ -40,10 +62,10 @@ The best way to configure the application is to create a local config file:
 
     touch config/config_local.rb
 
-To change, for example, the port that application runs on, add the following
+To change, for example, the version of the ArchivesSpace target, add the following
 line
 
-    Appdata.port_number 4568
+	Appdata.aspace_version 'v1.0.1'
     
 # Notes
 
@@ -60,10 +82,12 @@ contains data.
 
 Do not allow Archon users to create or edit data while the migration is running.
 
+Do not allow ArchivesSpace users to create or edit data while the migration is
+running.
+
 You can optimize the performance of the migration tool by adjusting the number of
 pages of Archon data that are cached. For example, if your largest Archon collection contains 50,000 Content records, and you are running the migration tool in an environment that can afford around 300MB of memory, you might want to add this line to your config_local.rb file:
 
     Appdata.archon_page_cache_size 500
 
-There's no (or little) advantage to setting the cache size to a value larger than the number of Content records in the largest Collection, divided by 100.
-
+There's no (or little) advantage to setting the page cache size to a value larger than the number of Content records in the largest Collection, divided by 100. There is a significant disadvantage to keeping your page cache size smaller than the number of pages of items in your largest collection.

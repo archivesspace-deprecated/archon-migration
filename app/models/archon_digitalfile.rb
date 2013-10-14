@@ -52,6 +52,11 @@ Archon.record_type(:digitalfile) do
         ft = Archon.record_type(:filetype).find(rec['FileTypeID'])
         fv.file_format_name = ft['FileType']
       end
+
+      if rec['Bytes']
+        fv.file_size_bytes = rec['Bytes'].to_i
+      end
+
       obj.file_versions << fv
     end
 

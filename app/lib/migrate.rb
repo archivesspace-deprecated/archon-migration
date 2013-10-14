@@ -56,16 +56,19 @@ class MigrationJob
   end
 
 
-  def connection_check
-    if @archon.has_session? && @aspace.has_session?
-      $log.debug("All systems go")
-    else
-      $log.warn("Not connected")
+  def all_good_or_die
+    if !@archon.has_session? 
+      raise "No Archon connection"
+    elsif !@aspace.has_session?
+      raise "No ArchivesSpace connection"
+    elsif !@aspace.database_empty?
+      raise "The ArchivesSpace instance you are connecting to is not empty. Please backup and delete the database"
     end
   end
 
 
   def migrate(y)
+    all_good_or_die
     @y = y
     Thread.current[:selected_repo_id] = 1
 
@@ -86,6 +89,7 @@ class MigrationJob
 
     # 5: Package Digital File content for Download
     package_digital_files
+    emit_status("Migration complete. Download the log to review warnings")
   end
 
 
@@ -174,21 +178,29 @@ class MigrationJob
 
     @aspace.repo(repo_id).import(@y) do |batch|
       container_trees = {}
+      position_tracker = {}
+      position_map = {}
 
       Archon.record_type(:content).set(coll_id).each do |rec|
         import_id = rec.class.import_id_for(rec['ID'])
         rec.class.transform(rec) do |obj_or_cont|
           if obj_or_cont.is_a?(Array)
-            unless container_trees.has_key?(obj_or_cont[0])
-              container_trees[obj_or_cont[0]] = []
+            cont = obj_or_cont
+            unless container_trees.has_key?(cont[0])
+              container_trees[cont[0]] = []
             end
-            container_trees[obj_or_cont[0]] << obj_or_cont[1]
+            container_trees[cont[0]] << cont[1]
           else
+            obj = obj_or_cont
+            set_key = obj.parent.nil? ? nil : obj.parent['ref']
+            position_tracker[set_key] ||= {}
+            position_tracker[set_key][obj.position] = obj.key
+
             resolve_ids_to_links(rec, obj_or_cont, classification_map)
 
             # link resource
             resource_uri = resource_map[import_id_for(:collection, coll_id)]
-            obj_or_cont.resource = {:ref => resource_uri}
+            obj.resource = {:ref => resource_uri}
             # attach digital object instances
             if digital_instance_map && digital_instance_map[import_id]
               digital_instance_map[import_id].each do |do_uri|
@@ -197,7 +209,7 @@ class MigrationJob
                 instance.digital_object = {
                   :ref => do_uri
                 }
-                obj_or_cont.instances << instance
+                obj.instances << instance
               end
             end
 
@@ -205,7 +217,21 @@ class MigrationJob
           end
         end
       end
+
+      # it might not be a bad idea to move this
+      # to aspace one day
+      position_tracker.each do |id, map|
+        sorted = map.keys.sort
+        sorted.each_with_index do |padded_position, real_position|
+          position_map[map[padded_position]] = real_position
+        end
+      end
+
       batch.each do |obj|
+        if position_map.has_key?(obj.key)
+          obj.position = position_map[obj.key]
+        end
+
         if (container_data_sets = container_trees[obj.key])
           container_data_sets.each do |container_data|
             container = ASpaceImport.JSONModel(:container).new

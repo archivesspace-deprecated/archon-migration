@@ -32,7 +32,7 @@ Appdata.parameter :aspace_version,
                   :mode,
                   :app_dir
 
-Appdata.aspace_version                  'v1.0.0RC1'
+Appdata.aspace_version                  'v1.0.0'
 
 Appdata.port_number                     4568
 

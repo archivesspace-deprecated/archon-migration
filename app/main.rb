@@ -52,8 +52,14 @@ post '/jobs' do
   Enumerator.new do |y|
     begin
       stamp = Time.now.strftime("%Y-%m-%d-%H-%M-%S")
-      $syslog = Logger.new(Appdata.app_dir + "/public/log-#{stamp}.txt")
+      $logfile = File.new(Appdata.app_dir + "/public/log-#{stamp}.txt", 'w')
+      $syslog = Logger.new($logfile)
       $log = MigrationLog.new(y, $syslog)
+      y << JSON.generate({
+                           :type => :log, 
+                           :file => File.basename($logfile.path)
+                         }) + "---\n"
+
       m = MigrationJob.new(params[:job])
       m.migrate(y)
     rescue JSONModel::ValidationException => e
@@ -68,6 +74,7 @@ post '/jobs' do
       y << JSON.generate({:type => :error, :body => e.to_s}) + "---\n"
     ensure
       $log = $syslog
+      $log.close
     end
   end
 end

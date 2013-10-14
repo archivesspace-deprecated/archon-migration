@@ -70,7 +70,7 @@ module GenericArchivalObject
       loc_keys.each do |k|
         if loc[k]
           obj["coordinate_#{i}_indicator"] =  loc[k]
-          obj["coordinate_#{i}_label"] = k
+          obj["coordinate_#{i}_label"] = (k == "RangeValue" ? "Range" : k)
           i += 1
         end
       end
@@ -78,7 +78,7 @@ module GenericArchivalObject
       #fallback
       unless obj.coordinate_1_indicator && !obj.coordinate_1_indicator.empty?
         obj.coordinate_1_indicator = "not recorded"
-        obj.coordinate_1_label = "RangeValue"
+        obj.coordinate_1_label = "Range"
       end
       
       obj
