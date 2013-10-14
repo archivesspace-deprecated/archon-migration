@@ -45,7 +45,9 @@ module ArchivesSpace
       req.form_data = {:password => @password}
 
       response = JSONModel::HTTP.do_http_request(url, req)
-      raise "Session Init error" unless response.code == '200'
+      unless response.code == '200'
+        raise "Couldn't log into ArchivesSpace and start a session"
+      end
 
       json = JSON::parse(response.body)
       @session = json['session']
@@ -100,6 +102,16 @@ module ArchivesSpace
     def repo(id)
       JSONModel.set_repository(id)
       self
+    end
+
+    # rely on client tools to break when uris don't exist
+    def database_empty? 
+      begin 
+        response = get_json('/repositories/2')
+        return false
+      rescue NoMethodError
+        return true
+      end
     end
 
 

@@ -22,7 +22,6 @@ describe "Migration" do
 
     @r1 = find(:resource, 1, "resolve[]" => ['classification', 'linked_agents', 'subjects'])
 
-
     @a1 = find(:accession, 1, "resolve[]" => ['classification', 'linked_agents', 'subjects'])
 
     @d1 = find(:digital_object, 1, "resolve[]" => ['linked_agents', 'subjects'])
@@ -99,6 +98,14 @@ describe "Migration" do
   it "maps ids in Content:Subjects to linked subjects" do
     ao = find(:archival_object, 1)
     ao.subjects.length.should eq(7)
+  end
+
+
+  it "assigns a label to Scope / Content notes on resource components" do
+    ao = find(:archival_object, 1)
+    scopenote = ao.notes.find {|n| n['type'] == 'scopecontent'}
+    scopenote['label'].should_not be_nil
+    scopenote['label'].should eq('Scope and Contents')
   end
 
 

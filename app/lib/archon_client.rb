@@ -20,6 +20,7 @@ module Archon
 
 
   def self.init
+    @@record_types = {}
     Dir.glob(File.join(File.dirname(__FILE__),
                        '../',
                        'models', 

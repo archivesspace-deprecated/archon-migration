@@ -21,11 +21,13 @@ Archon.record_type(:content) do
     end
   end
 
-
+ 
   def self.transform(rec)
     case rec['ContentType']
     when '1'
       yield to_archival_object(rec)
+      cd = to_container_data(rec, false)
+      yield cd unless cd[1].empty?
     when '2'
       yield to_container_data(rec)
     when '3'
@@ -90,7 +92,8 @@ Archon.record_type(:content) do
                            :subnotes => [model(:note_text,
                                               {
                                                 :content => rec['Description']
-                                               })]
+                                               })],
+                           :label => "Scope and Contents"
                          })
     end
 
@@ -104,7 +107,6 @@ Archon.record_type(:content) do
     if rec['OtherLevel'] && obj.level == 'otherlevel'
       obj.other_level = rec['OtherLevel']
     end
-
 
     unless rec['Notes'].is_a?(Array) && rec['Notes'].empty?
       rec['Notes'].values.each do |note_data|
@@ -144,16 +146,16 @@ Archon.record_type(:content) do
   end
 
 
-  def self.to_container_data(rec)
-    data_key = case rec['ContentType']
-               when '2'; nearest_non_physical_ancestor(rec['ParentID'])
-               when '3'; rec['ID']
-               end
+  def self.to_container_data(rec, ima_container=true)
+    data_key = rec['ID']
 
-    container_data = [{
-      :type => get_container_type(rec['ContainerTypeID']),
-      :indicator => rec['ContainerIndicator']
-    }]
+    container_data = []
+    if ima_container
+      container_data << {
+        :type => get_container_type(rec['ContainerTypeID']),
+        :indicator => rec['ContainerIndicator']
+      }
+    end
 
     [data_key, build_container_set(container_data, next_physical_ancestor(rec))]
   end
@@ -203,16 +205,29 @@ Archon.record_type(:content) do
   end
 
 
-  def self.figure_out_position(rec, position=nil)
-    positon = rec['SortOrder'] unless position
+  def self.figure_out_position(rec, position=nil, xtra = [])
+    position = rec['SortOrder'] unless position
     parent_id = rec['ParentID']
 
     return position.to_i if  parent_id == '0' || parent_id.nil?
 
     parent = find(parent_id)
-    if parent['ContentType'] == '2'
-      figure_out_position(parent, parent['SortOrder'])
+    if parent.nil?
+      return nil # orphaned component
+    elsif parent['ContentType'] == '2'
+      xtra << rec['SortOrder']
+      figure_out_position(parent, parent['SortOrder'], xtra)
     else
+      while xtra.length > 0 do
+        # assume no physical-only node has > 9999 kids
+        position = "#{position}#{pad(xtra.shift, 4)}" 
+      end
+
+      # normalize all integers to 13 decimals
+      # and assume no not-merely-physical node
+      # will have 3 physical-only ancestors in a row
+      position = pad(position, 13, :right) 
+    
       return position.to_i
     end
   end
@@ -230,6 +245,20 @@ Archon.record_type(:content) do
       [:note_singlepart, archon_type]
     else
       [:note_multipart, "odd"] # ????
+    end
+  end
+
+
+  def self.pad(val, size, side = :left)
+    val = val.to_s
+    padding = ""
+    (size - val.length).times { padding << "0" }
+
+    case side
+    when :left
+      padding + val
+    when :right
+      val + padding
     end
   end
 end
