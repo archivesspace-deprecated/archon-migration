@@ -259,8 +259,6 @@ Archon.record_type(:content) do
       padding + val
     when :right
       val + padding
-    else
-      raise" Bad pad, Dad"
     end
   end
 end
