@@ -35,6 +35,9 @@ Dir.glob(File.dirname(File.absolute_path(__FILE__)) + '/lib/*.rb').each do |f|
   require f
 end
 
+public_dir = File.dirname(File.absolute_path(__FILE__)) + '/public'
+Dir.mkdir(public_dir) unless File.exists?(public_dir)
+
 
 get '/' do
   erb :index
