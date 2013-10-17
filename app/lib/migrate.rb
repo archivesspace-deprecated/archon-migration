@@ -194,7 +194,8 @@ class MigrationJob
             obj = obj_or_cont
             set_key = obj.parent.nil? ? nil : obj.parent['ref']
             position_tracker[set_key] ||= {}
-            position_tracker[set_key][obj.position] = obj.key
+            position_tracker[set_key][obj.position] ||= []
+            position_tracker[set_key][obj.position] << obj.key
 
             resolve_ids_to_links(rec, obj_or_cont, classification_map)
 
@@ -223,13 +224,17 @@ class MigrationJob
       position_tracker.each do |id, map|
         sorted = map.keys.sort
         sorted.each_with_index do |padded_position, real_position|
-          position_map[map[padded_position]] = real_position
+          map[padded_position].each do |obj_key|
+            position_map[obj_key] = real_position
+          end
         end
       end
 
       batch.each do |obj|
         if position_map.has_key?(obj.key)
           obj.position = position_map[obj.key]
+        else
+          obj.position = nil
         end
 
         if (container_data_sets = container_trees[obj.key])
