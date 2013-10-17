@@ -96,7 +96,6 @@ module ASpaceImport
           end
         end
       ensure
-        FileUtils.cp(@batch_file, "/Users/hoffman/Developer/Projects/archon-migration/batch_trace_#{Time.now.to_i}.txt")
         @batch_file.unlink
       end
     end
