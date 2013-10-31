@@ -66,7 +66,13 @@ To change, for example, the version of the ArchivesSpace target, add the followi
 line
 
 	Appdata.aspace_version 'v1.0.1'
-    
+
+If Archon response times become slow due to network latency or large datasets, it is
+possible to speed up successive tests by turning on database caching. Note that you must manually delete
+the database if you point the migration tool at a new Archon instance.
+
+	Appdata.use_dbcache  true
+
 # Notes
 
 A typical migration can take several hours and will cause ArchivesSpace's 
