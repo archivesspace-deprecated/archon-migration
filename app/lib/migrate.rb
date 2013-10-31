@@ -125,6 +125,7 @@ class MigrationJob
     end
 
     # Resource Component Trees
+    failures = []
     Archon.record_type(:collection).each(false) do |data|
       next unless data['RepositoryID'] == archon_repo_id
       coll_id = data['ID']
@@ -176,83 +177,97 @@ class MigrationJob
                                  digital_instance_map, 
                                  classification_map)
 
-    @aspace.repo(repo_id).import(@y) do |batch|
-      container_trees = {}
-      position_tracker = {}
-      position_map = {}
+    emit_status("Migrating Collection Content #{coll_id}", :update)
 
-      Archon.record_type(:content).set(coll_id).each do |rec|
-        import_id = rec.class.import_id_for(rec['ID'])
-        rec.class.transform(rec) do |obj_or_cont|
-          if obj_or_cont.is_a?(Array)
-            cont = obj_or_cont
-            unless container_trees.has_key?(cont[0])
-              container_trees[cont[0]] = []
-            end
-            container_trees[cont[0]] << cont[1]
-          else
-            obj = obj_or_cont
-            set_key = obj.parent.nil? ? nil : obj.parent['ref']
-            position_tracker[set_key] ||= {}
-            position_tracker[set_key][obj.position] ||= []
-            position_tracker[set_key][obj.position] << obj.key
+    i = 1
+    5.times do
+      emit_status("Attempt #{i}", :flash)
+      i += 1
+      result = @aspace.repo(repo_id).import(@y) do |batch|
+        container_trees = {}
+        position_tracker = {}
+        position_map = {}
 
-            resolve_ids_to_links(rec, obj_or_cont, classification_map)
-
-            # link resource
-            resource_uri = resource_map[import_id_for(:collection, coll_id)]
-            obj.resource = {:ref => resource_uri}
-            # attach digital object instances
-            if digital_instance_map && digital_instance_map[import_id]
-              digital_instance_map[import_id].each do |do_uri|
-                instance = ASpaceImport.JSONModel(:instance).new
-                instance.instance_type = 'digital_object'
-                instance.digital_object = {
-                  :ref => do_uri
-                }
-                obj.instances << instance
+        Archon.record_type(:content).set(coll_id).each do |rec|
+          import_id = rec.class.import_id_for(rec['ID'])
+          rec.class.transform(rec) do |obj_or_cont|
+            if obj_or_cont.is_a?(Array)
+              cont = obj_or_cont
+              unless container_trees.has_key?(cont[0])
+                container_trees[cont[0]] = []
               end
+              container_trees[cont[0]] << cont[1]
+            else
+              obj = obj_or_cont
+              set_key = obj.parent.nil? ? nil : obj.parent['ref']
+              position_tracker[set_key] ||= {}
+              position_tracker[set_key][obj.position] ||= []
+              position_tracker[set_key][obj.position] << obj.key
+
+              resolve_ids_to_links(rec, obj_or_cont, classification_map)
+
+              # link resource
+              resource_uri = resource_map[import_id_for(:collection, coll_id)]
+              obj.resource = {:ref => resource_uri}
+              # attach digital object instances
+              emit_status("Attaching digital object instances to Content record #{obj.title}", :flash)
+              if digital_instance_map && digital_instance_map[import_id]
+                digital_instance_map[import_id].each do |do_uri|
+                  instance = ASpaceImport.JSONModel(:instance).new
+                  instance.instance_type = 'digital_object'
+                  instance.digital_object = {
+                    :ref => do_uri
+                  }
+                  obj.instances << instance
+                end
+              end
+
+              batch.unshift(obj_or_cont)
             end
-
-            batch.unshift(obj_or_cont)
           end
         end
-      end
 
-      # it might not be a bad idea to move this
-      # to aspace one day
-      position_tracker.each do |id, map|
-        sorted = map.keys.sort
-        sorted.each_with_index do |padded_position, real_position|
-          map[padded_position].each do |obj_key|
-            position_map[obj_key] = real_position
-          end
-        end
-      end
-
-      batch.each do |obj|
-        if position_map.has_key?(obj.key)
-          obj.position = position_map[obj.key]
-        else
-          obj.position = nil
-        end
-
-        if (container_data_sets = container_trees[obj.key])
-          container_data_sets.each do |container_data|
-            container = ASpaceImport.JSONModel(:container).new
-            container_data.each_with_index do |data, i|
-              container.send("type_#{i+1}=", (data[:type] || "unknown"))
-              container.send("indicator_#{i+1}=", data[:indicator])
+        # it might not be a bad idea to move this
+        # to aspace one day
+        emit_status("Adjusting positions for Content records in Collection #{coll_id}", :flash)
+        position_tracker.each do |id, map|
+          sorted = map.keys.sort
+          sorted.each_with_index do |padded_position, real_position|
+            map[padded_position].each do |obj_key|
+              position_map[obj_key] = real_position
             end
-        
-            instance = ASpaceImport.JSONModel(:instance).new
-            instance.container = container
-            instance.instance_type = 'text'
-
-            obj.instances << instance
           end
         end
+        emit_stauts("Done adjusting positions", :flash)
+
+        emit_status("Matching Content records to Containers", :flash)
+        batch.each do |obj|
+          if position_map.has_key?(obj.key)
+            obj.position = position_map[obj.key]
+          else
+            obj.position = nil
+          end
+
+          if (container_data_sets = container_trees[obj.key])
+            container_data_sets.each do |container_data|
+              container = ASpaceImport.JSONModel(:container).new
+              container_data.each_with_index do |data, i|
+                container.send("type_#{i+1}=", (data[:type] || "unknown"))
+                container.send("indicator_#{i+1}=", data[:indicator])
+              end
+              
+              instance = ASpaceImport.JSONModel(:instance).new
+              instance.container = container
+              instance.instance_type = 'text'
+
+              obj.instances << instance
+            end
+          end
+        end
+        emit_status("Done matching Content records to Containers", :flash)
       end
+
+      break unless result == false
     end
   end
 
@@ -272,9 +287,10 @@ class MigrationJob
 
   def migrate_users
     emit_status("Migrating User records")
+    i = 0;
 
     Archon.record_type(:user).each do |rec|
-
+      i = i + 1;
       rec.class.transform(rec) do |obj|
         my_groups = []
 
@@ -301,6 +317,9 @@ class MigrationJob
         
         $log.debug("Save User result: #{result}")
       end
+      if i.modulo(10) == 0
+        emit_status("Saved #{i} records", :update);
+      end
     end
   end
 
@@ -313,10 +332,15 @@ class MigrationJob
        :creator
       ].each do |key|
       
+        i = 0;
         Archon.record_type(key).each do |rec|
           $log.debug("Migrating Record: #{rec.inspect}")
           rec.class.transform(rec) do |obj|
             batch << obj
+          end
+          i += 1
+          if i.modulo(100) == 0
+            emit_status("#{i} Archon records have been read", :flash)
           end
         end
       end
@@ -401,6 +425,7 @@ class MigrationJob
         end
       end
     end
+    $log.debug(do_map.inspect);
     
     Hash[instance_map.map{|k, v| [k, v.map{|import_id| do_map[import_id]}]}]
   end
