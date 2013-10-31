@@ -340,6 +340,7 @@ module Archon
 
 
   module HTTP
+    require 'sqlite3' if Appdata.use_dbcache
 
     def http
       @http ||= Net::HTTP::Persistent.new 'archon_client'
@@ -353,16 +354,30 @@ module Archon
                                    :max_size => Appdata.archon_page_cache_size, 
                                    :default => false)
 
+      # look at in-memory cache
       if @http_cache[endpoint]
-        $log.debug("Using cached page")
         json_string = @http_cache[endpoint]
-      elsif usecache
-        $log.debug("Caching page")
-        @http_cache[endpoint] = _get_json(endpoint)
-        json_string = @http_cache[endpoint]
+      # look at / send to db cache
+      elsif Appdata.use_dbcache
+        db = get_db
+        rows = db.execute( "select * from archon_responses where endpoint like '#{endpoint}'" )
+        if rows.count == 1
+          $log.debug("Using DB cache for endpoint #{endpoint}")
+          json_string = rows[0][1]
+        elsif rows.count == 0
+          $log.debug("Adding DB cache for #{endpoint}")
+          json_string = _get_json(endpoint)
+          db.execute( "insert into archon_responses (endpoint, json) values (?, ?)", [endpoint, json_string] )
+        else
+          raise "bad database row count"
+        end
       else
-        $log.debug("Fetching page, not caching")
         json_string = _get_json(endpoint)
+      end
+
+      # send to in-memory cache
+      if usecache 
+        @http_cache[endpoint] = json_string
       end
 
       begin
@@ -468,6 +483,18 @@ module Archon
         return response.body
       end
     end
+
+    # a really dumb database 
+    def get_db
+      db = SQLite3::Database.new("archon_api_cache.db")
+      tables = db.execute "select name from sqlite_master where type = 'table'"
+      unless tables.count == 1 && tables[0][0] == 'archon_responses'
+        $log.debug("Initializing API cache database")
+        r = db.execute( "create table archon_responses (endpoint varchar(255), json blob)" )
+      end
+
+      db
+    end  
   end
 
 
@@ -475,12 +502,16 @@ module Archon
     include HTTP
 
     def initialize(opts = {})
+      if (opts.keys - [:url, :user, :password]).length > 0
+        raise "Bad argument in #{opts.inspect}"
+      end
       @url = opts[:url] || Appdata.default_archon_url
       @user = opts[:user] || Appdata.default_archon_user
       @password = opts[:password] || Appdata.default_archon_password
 
-      init_session
+      @url.sub!(/\/*$/, '')
 
+      init_session
       Thread.current[:archon_client] = self
     end
 
