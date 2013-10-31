@@ -34,7 +34,7 @@ $(document).ready(function(){
   $("#nodourl").click(function(){
     // If checked
     if ($("#nodourl").is(":checked")) {
-    //show the hidden div
+      //show the hidden div
       $("#do_baseurl").removeAttr('required');
     }  else {
       //otherwise, hide it
@@ -46,57 +46,106 @@ $(document).ready(function(){
 
 
 function updateStatus(update, emitter){
-//    console.log(update);
+    console.log(update);
     if (update.type == 'error') {
       emitter.show_error(update.body);
     } else if (update.type == 'status') {
-      emitter.refresh_status(update.body, update.source);
+      emitter.add_status(update.body);
     } else if (update.type == 'warning') {
-      emitter.show_warning(update.body);
+      emitter.show_error(update.body);
+    } else if (update.type == 'update') {
+      emitter.show_update(update.body, update.source);
+    } else if (update.type == 'flash') {
+      emitter.flash(update.body, update.source);
     } else if (update.type == 'progress') {
       emitter.show_progress(update.ticks, update.total);
-    } else if (update.type == 'update') {
+    } else if (update.type == 'progress_message') {
       emitter.show_progress_message(update.body);
     } else if (update.type == 'log') {
       $('#download-log').attr('href', update.file);
-    } else {
-      // todo: toggle in progress bar
     }
 }
 
 
 function StatusEmitter() {
-  var console = $('#status-console');
+  var statusBox = $('#status-console');
 
-  this.refresh_status = function(status, source){
-    if (source == 'aspace') {
-      $("#status-console div:last p.aspace").html(status);
-    } else {
-      $("#status-console div:last p.aspace").remove();
-      $("#status-console div:last span.progress-message").html(" - Done");
-      console.append("<div class=\"status " + source + "\"><p class=\"main\">"+status+"</p><p class=\"aspace\"></p></div>");
+  this.last_status = function() {
+    return statusBox.children('div.status:last');
+  }
+
+  this.add_status = function(status) {
+    last_status = this.last_status();
+    console.log(last_status);
+    if (last_status.length) {
+      last_status.addClass("collapsed");
+      last_status.children('div.updates').children('p:last').children('span.progress').remove();
+      last_status.children('div.updates').children('p.flash').fadeOut(500, function() {
+        this.remove()
+      });
     }
+    statusBox.append("<div class=\"status\"><div class=\"main\">"+status+" <a href=\"#\" class=\"toggleUpdates\"> (+/-)</a></div><div class=\"updates\"></div></div>");
+
+    last_status = this.last_status();
+    toggler = last_status.children('div.main').children('a.toggleUpdates');
+
+    toggler.on('click', function(e) {
+      $(this).parent().parent().toggleClass('collapsed');
+    });
   }
 
-  this.show_error = function(error){
-    console.addClass('error');
-    console.append("<p class='error'><b>"+error+"</b></p>");
+  this.show_error = function(body){
+    last_status = this.last_status();
+    if (!last_status.length) {
+      this.add_status('Migration Errors');
+      last_status = this.last_status();
+    }
+
+    html = "<p class='error'><b>"+body+"</b></p>";
+    last_status.children('div.updates').append(html);
   }
 
-  this.show_warning = function(warning){
-    console.append("<p class='warn'>" + warning + "</p>");
+  this.show_update = function(body, source){
+    source = typeof source !== 'undefined' ? source : 'migration';
+    last_status = this.last_status();
+    last_status.children('div.updates').children('p:last').children('span.progress').remove();
+
+    last_status.children('div.updates').children('p.flash').fadeOut(500, function() {
+      this.remove()
+    });
+
+    html = "<p class='update "+source+"'>" + body + "</p>";
+    last_status.children('div.updates').append(html);
   }
 
   this.show_progress = function(ticks, total) {
-    var percent = Math.round((ticks / total) * 100);
-    $("#status-console div:last span.progress").remove();
-    $("#status-console div:last p:last").append("<span class='progress'> " + percent + "%</span>");
+    percent = Math.round((ticks / total) * 100);
+    last_status = this.last_status();
+
+    last_status.children('div.updates').children('p:last').children('span.progress').remove();
+    html = "<span class='progress'> " + percent + "%</span>";
+    last_status.children('div.updates').children('p:last').append(html);
   }
 
   this.show_progress_message = function(body) {
-    $("#status-console div:last p:first span.progress-message").remove();
-    $("#status-console div:last p:first").append("<span class='progress-message'> - " + body + "</span>");
+    $("#status-console div.status:last div.updates span.progress-message").remove();
+    $("#status-console div.status:last div.updates p.migration:last").append("<span class='progress-message'> - " + body + "</span>");
   }
+
+  this.flash = function(body, source){
+    source = typeof source !== 'undefined' ? source : 'migration';
+    last_status = this.last_status();
+
+    last_status.children('div.updates').children('p:last').children('span.progress').remove();
+    last_status.children('div.updates').children('p.flash').fadeOut(500, function() {
+      this.remove()
+    });
+
+    html = "<p class='update flash "+source+"'>" + body + "</p>";
+    last_status.children('div.updates').append(html);
+  }
+
+    
 }
 
 
