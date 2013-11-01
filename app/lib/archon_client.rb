@@ -388,7 +388,10 @@ module Archon
           return nil
         else
           $log.debug("Bad Response String: #{json_string}")
-          raise "Archon response is not JSON!"
+          msg = "Archon response is not JSON!\n"
+          msg += "Endpoint: '#{endpoint}'\n"
+          msg += "See log for illegal JSON string"
+          raise msg
         end
       end
     end
