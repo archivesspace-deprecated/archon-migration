@@ -238,7 +238,7 @@ class MigrationJob
             end
           end
         end
-        emit_stauts("Done adjusting positions", :flash)
+        emit_status("Done adjusting positions", :flash)
 
         emit_status("Matching Content records to Containers", :flash)
         batch.each do |obj|
