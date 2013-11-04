@@ -318,7 +318,7 @@ class MigrationJob
         $log.debug("Save User result: #{result}")
       end
       if i.modulo(10) == 0
-        emit_status("Saved #{i} records", :update);
+        emit_status("Saved #{i} records", :flash);
       end
     end
   end

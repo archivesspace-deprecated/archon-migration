@@ -80,9 +80,7 @@ function StatusEmitter() {
     if (last_status.length) {
       last_status.addClass("collapsed");
       last_status.children('div.updates').children('p:last').children('span.progress').remove();
-      last_status.children('div.updates').children('p.flash').fadeOut(500, function() {
-        this.remove()
-      });
+      last_status.children('div.updates').children('p.flash').remove();
     }
     statusBox.append("<div class=\"status\"><div class=\"main\">"+status+" <a href=\"#\" class=\"toggleUpdates\"> (+/-)</a></div><div class=\"updates\"></div></div>");
 
@@ -110,9 +108,7 @@ function StatusEmitter() {
     last_status = this.last_status();
     last_status.children('div.updates').children('p:last').children('span.progress').remove();
 
-    last_status.children('div.updates').children('p.flash').fadeOut(500, function() {
-      this.remove()
-    });
+    last_status.children('div.updates').children('p.flash').remove();
 
     html = "<p class='update "+source+"'>" + body + "</p>";
     last_status.children('div.updates').append(html);
@@ -137,9 +133,7 @@ function StatusEmitter() {
     last_status = this.last_status();
 
     last_status.children('div.updates').children('p:last').children('span.progress').remove();
-    last_status.children('div.updates').children('p.flash').fadeOut(500, function() {
-      this.remove()
-    });
+    last_status.children('div.updates').children('p.flash').remove();
 
     html = "<p class='update flash "+source+"'>" + body + "</p>";
     last_status.children('div.updates').append(html);
