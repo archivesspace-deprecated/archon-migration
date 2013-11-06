@@ -62,6 +62,7 @@ module ArchivesSpace
 
       # for JSONModel
       Thread.current[:backend_session] = @session
+      $log.debug("New backend session: #{@session}")
     end
 
 
@@ -151,13 +152,14 @@ module ArchivesSpace
       # if cache.empty? && seen_records.empty?
       if cache.empty? && working_file.size == 0
         $log.warn("Empty batch: not saving")
-        return {} 
+        return {}
       end
 
       # save the batch
       $log.debug("Posting import batch")
 
       init_session # log in before posting a batch
+      $log.debug("Using session: #{Thread.current[:backend_session]}")
 
       cache.save! do |response|
         if response.code.to_s == '200'
@@ -174,10 +176,12 @@ module ArchivesSpace
                 end
               end
             rescue JSON::ParserError => e
+              $log.debug("JSON parse error parsing chunk #{chunk}")
               y << json_chunk({
                                :type => 'error',  
                                :body => e.to_s
                              })
+              return false
             end
           end
 
@@ -186,6 +190,7 @@ module ArchivesSpace
                             :type => 'error',
                             :body => "ArchivesSpace server error: #{response.code}"
                           })
+          return false
         end
       end
 
