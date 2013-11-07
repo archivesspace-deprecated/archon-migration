@@ -262,9 +262,13 @@ module ArchivesSpace
         # do nothing because we're treating the response as a stream
       elsif chunk =~ /\A\n\]\Z/
         # the last message doesn't have a comma, so it's a fragment
-        yield ASUtils.json_parse(@fragments.sub(/\n\Z/, ''))
+        s = @fragments.sub(/\n\Z/, '')
+        @fragments = ""
+        yield ASUtils.json_parse(s)
       elsif chunk =~ /.*,\n\Z/
-        yield ASUtils.json_parse(@fragments + chunk.sub(/,\n\Z/, ''))
+        s = @fragments + chunk.sub(/,\n\Z/, '')
+        @fragments = ""
+        yield ASUtils.json_parse(s)
       else
         @fragments << chunk
       end
