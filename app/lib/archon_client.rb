@@ -267,7 +267,7 @@ module Archon
 
 
     def self.unspecified(value)
-      $log.debug("Using unspecified value: #{value}")
+      # $log.debug("Using unspecified value: #{value}")
       value
     end
 
