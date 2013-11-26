@@ -23,7 +23,7 @@ Archon.record_type(:accession) do
                          })
     end
 
-    if rec['ReceivedExtent']
+    if rec['ReceivedExtent'] && rec['ReceivedExtent'].is_a?(String)
       obj.extents << model(:extent,
                            {
                              :number => rec['ReceivedExtent'],

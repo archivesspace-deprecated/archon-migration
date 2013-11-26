@@ -65,6 +65,10 @@ module GenericArchivalObject
       obj = model(:location).new
       obj.building = loc['Location']
 
+      if obj.respond_to?(:external_ids) && rec['ID']
+        obj.external_ids << {:source => "Archon", :external_id => rec["ID"]}
+      end
+
       loc_keys = %w(RangeValue Section Shelf)
       i = 1
       loc_keys.each do |k|

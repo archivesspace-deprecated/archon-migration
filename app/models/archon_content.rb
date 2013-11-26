@@ -1,6 +1,7 @@
 Archon.record_type(:content) do
   plural 'content'
   no_html 'Title'
+  corresponding_record_type :archival_object
 
   def self.endpoint(start = 1)
     raise "Collection not specified" unless @cid
@@ -38,8 +39,7 @@ Archon.record_type(:content) do
 
 
   def self.to_archival_object(rec)
-    obj = model(:archival_object).new
-    obj.uri = obj.class.uri_for(rec.import_id)
+    obj = to_obj(rec)
     obj.key = rec['ID']
 
     obj.level = rec['EADLevel']
@@ -207,6 +207,7 @@ Archon.record_type(:content) do
 
   def self.figure_out_position(rec, position=nil, xtra = [])
     position = rec['SortOrder'] unless position
+    position = pad(position, 3)
     parent_id = rec['ParentID']
 
     return position.to_i if  parent_id == '0' || parent_id.nil?
@@ -223,10 +224,11 @@ Archon.record_type(:content) do
         position = "#{position}#{pad(xtra.shift, 4)}" 
       end
 
-      # normalize all integers to 13 decimals
+      # normalize all integers to 16 decimal space
       # and assume no not-merely-physical node
       # will have 3 physical-only ancestors in a row
-      position = pad(position, 13, :right) 
+      # (3 x 4) + 4 = 16
+      position = pad(position, 16, :right) 
     
       return position.to_i
     end

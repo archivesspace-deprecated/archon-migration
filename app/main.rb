@@ -1,3 +1,9 @@
+
+unless RUBY_VERSION =~ /1\.9\.3/
+  puts "You are using an unsupported version of Ruby. Please read the README and try again"
+  raise "Cannot support #{RUBY_VERSION}"
+end
+
 require 'sinatra'
 require 'sinatra/assetpack'
 
@@ -81,4 +87,3 @@ post '/jobs' do
     end
   end
 end
-

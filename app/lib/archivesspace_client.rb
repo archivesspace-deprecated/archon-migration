@@ -36,8 +36,10 @@ module ArchivesSpace
 
   module HTTP
 
-    def init_session
-      $log.debug("Logging into ArchivesSpace")
+    def init_session(triesleft = 20)
+      $log.debug("Attempt logging into ArchivesSpace")
+      Thread.current[:backend_session] = nil
+
       url = URI("#{@url}/users/#{@user}/login")
       raise URIException, "URI format error: #{@url}" unless URI::HTTP === url
 
@@ -46,7 +48,13 @@ module ArchivesSpace
 
       response = JSONModel::HTTP.do_http_request(url, req)
       unless response.code == '200'
-        raise "Couldn't log into ArchivesSpace and start a session"
+        if triesleft > 0
+          $log.debug("Log in failed: try again in 1 second")
+          sleep(1)
+          init_session(triesleft - 1)
+        else
+          raise "Giving up: couldn't log into ArchivesSpace and start a session"
+        end
       end
 
       json = JSON::parse(response.body)
@@ -54,6 +62,7 @@ module ArchivesSpace
 
       # for JSONModel
       Thread.current[:backend_session] = @session
+      $log.debug("New backend session: #{@session}")
     end
 
 
@@ -142,12 +151,16 @@ module ArchivesSpace
 
       # if cache.empty? && seen_records.empty?
       if cache.empty? && working_file.size == 0
-        $log.warn("Empty batch: aborting, not saving")
-        return {} 
+        $log.warn("Empty batch: not saving")
+        return {}
       end
 
       # save the batch
       $log.debug("Posting import batch")
+
+      init_session # log in before posting a batch
+      $log.debug("Using session: #{Thread.current[:backend_session]}")
+
       cache.save! do |response|
         if response.code.to_s == '200'
 
@@ -163,10 +176,12 @@ module ArchivesSpace
                 end
               end
             rescue JSON::ParserError => e
+              $log.debug("JSON parse error parsing chunk #{chunk}")
               y << json_chunk({
                                :type => 'error',  
                                :body => e.to_s
                              })
+              return false
             end
           end
 
@@ -175,6 +190,7 @@ module ArchivesSpace
                             :type => 'error',
                             :body => "ArchivesSpace server error: #{response.code}"
                           })
+          return false
         end
       end
 
@@ -195,7 +211,7 @@ module ArchivesSpace
         end
       elsif message['saved'] && message['saved'].is_a?(Hash)
         r = {
-          :type => 'status',
+          :type => 'update',
           :source => 'aspace',
           :body => "Saved #{message['saved'].keys.count} records"
         }
@@ -204,16 +220,16 @@ module ArchivesSpace
       elsif message['status'].respond_to?(:length)
         message['status'].each do |status|
           if status['type'] == 'started'
-            r =  {
-              :type => 'status',
+            r =  {            
               :source => 'aspace',
               :body => status['label'],
               :id => status['id']
             }
+            r[:type] = r[:body] =~ /^Saved/ ? :update : :flash
             yield r
           elsif status['type'] == 'refresh'
             r = {
-              :type => 'update',
+              :type => 'flash',
               :source => 'migration',
               :body => status['label'],
             }
@@ -246,9 +262,13 @@ module ArchivesSpace
         # do nothing because we're treating the response as a stream
       elsif chunk =~ /\A\n\]\Z/
         # the last message doesn't have a comma, so it's a fragment
-        yield ASUtils.json_parse(@fragments.sub(/\n\Z/, ''))
+        s = @fragments.sub(/\n\Z/, '')
+        @fragments = ""
+        yield ASUtils.json_parse(s)
       elsif chunk =~ /.*,\n\Z/
-        yield ASUtils.json_parse(@fragments + chunk.sub(/,\n\Z/, ''))
+        s = @fragments + chunk.sub(/,\n\Z/, '')
+        @fragments = ""
+        yield ASUtils.json_parse(s)
       else
         @fragments << chunk
       end

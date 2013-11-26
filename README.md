@@ -66,16 +66,20 @@ To change, for example, the version of the ArchivesSpace target, add the followi
 line
 
 	Appdata.aspace_version 'v1.0.1'
-    
+
+If Archon response times become slow due to network latency or large datasets, it is
+possible to speed up successive tests by turning on database caching. Note that you must manually delete
+the database if you point the migration tool at a new Archon instance.
+
+	Appdata.use_dbcache  true
+
+*Note: this feature is not complete and should be left off by default.
+
 # Notes
 
-A typical migration can take several hours and will cause ArchivesSpace's 
+A typical migration can take several hours and could cause ArchivesSpace's 
 indexer to get backed up. Migrated records may not appear right away in browse or search results in ArchivesSpace. Consider running ArchivesSpace with the indexer
-turned off to speed up the migration process.
-
-A large migration may fail because of an expiration of the migration tool's session in ArchivesSpace. Avoid this by setting a 10 hour session expiration threshold in the ArchivesSpace configuration file:
-
-	AppConfig[:session_expire_after_seconds] = 36000
+turned off to speed up the migration process, or upgrading to a later version of ArchivesSpace.
 
 Do not run a migration process against an ArchivesSpace instance that already
 contains data.

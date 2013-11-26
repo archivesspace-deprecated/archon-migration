@@ -8,7 +8,16 @@
     background: #ddd;
 }
 
-p {
+#status-console div.main {
+    font-size: 1.1em;
+}
+
+#status-console div.collapsed div.updates {
+    visibility: hidden;
+    height: 0px;
+}
+
+p.update, p.error, p.warn {
     padding-left: 10px;
     padding-right: 10px;
 }

@@ -30,7 +30,8 @@ Appdata.parameter :aspace_version,
                   :default_aspace_user,
                   :default_aspace_password,
                   :mode,
-                  :app_dir
+                  :app_dir,
+									:use_dbcache
 
 Appdata.aspace_version                  'v1.0.0'
 
@@ -54,6 +55,11 @@ Appdata.default_aspace_password         'admin'
 # with 50,000 Content records, set this to 500 if your server
 # has sufficient memory
 Appdata.archon_page_cache_size          400 
+
+Appdata.use_dbcache											false
+
+
+
 
 if File.exists?(File.join(File.dirname(__FILE__), 'config_local.rb'))
   require_relative('config_local.rb')

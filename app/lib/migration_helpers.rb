@@ -21,15 +21,6 @@ module MigrationHelpers
   end
 
 
-  # def bounded_containers(container_data)
-  #   if container_data.length > 2
-  #     container_data[-3..-1]
-  #   else
-  #     container_data
-  #   end
-  # end
-
-
   def get_classification_import_id(rec)
     id = if rec.has_key?('Classifications')
            rec['Classifications'][0]

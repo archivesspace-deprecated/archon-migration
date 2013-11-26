@@ -16,6 +16,11 @@ Archon.record_type(:subject) do
     end
 
     obj.uri = obj.class.uri_for(rec.import_id)
+
+    if obj.respond_to?(:external_ids) && rec['ID']
+      obj.external_ids << {:source => "Archon", :external_id => rec["ID"]}
+    end
+
     yield obj
   end
 
