@@ -259,6 +259,10 @@ module Archon
           obj.uri = obj.class.uri_for(rec.import_id)
         end
 
+        if obj.respond_to?(:external_ids) && rec['ID']
+          obj.external_ids << {:source => "Archon", :external_id => rec["ID"]}
+        end
+
         obj
       else
         raise "error"

@@ -1,6 +1,7 @@
 Archon.record_type(:content) do
   plural 'content'
   no_html 'Title'
+  corresponding_record_type :archival_object
 
   def self.endpoint(start = 1)
     raise "Collection not specified" unless @cid
@@ -38,8 +39,7 @@ Archon.record_type(:content) do
 
 
   def self.to_archival_object(rec)
-    obj = model(:archival_object).new
-    obj.uri = obj.class.uri_for(rec.import_id)
+    obj = to_obj(rec)
     obj.key = rec['ID']
 
     obj.level = rec['EADLevel']

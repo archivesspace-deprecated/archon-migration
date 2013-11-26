@@ -67,6 +67,10 @@ Archon.record_type(:creator) do
 
     obj.uri = obj.class.uri_for(rec.import_id)
 
+    if obj.respond_to?(:external_ids) && rec['ID']
+      obj.external_ids << {:source => "Archon", :external_id => rec["ID"]}
+    end
+
     if rec['BiogHist']
       note = model(:note_bioghist).new
 
