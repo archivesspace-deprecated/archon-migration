@@ -87,26 +87,3 @@ post '/jobs' do
     end
   end
 end
-
-
-# post '/jobs' do
-
-#   Enumerator.new do |y|
-#     [
-#      {:type => :status, :body => "Status 1"},
-#      {:type => :update, :body => "Update 1"},
-#      {:type => :flash, :body => "Flash 1"},
-#      {:type => :flash, :body => "Flash 2", :source => 'aspace'},
-#      {:type => :progress, :ticks => "2", :total => "5"},
-#      {:type => :progress, :ticks => "4", :total => "5"},
-#      {:type => :update, :body => "Update 2"},
-#      {:type => :progress, :ticks => "2", :total => "5"},
-#      {:type => :progress, :ticks => "4", :total => "5"},
-#      {:type => :status, :body => "Status 2"},
-#      {:type => :update, :body => "Update 3"},
-#     ].each do |msg|
-#       y << JSON.generate(msg) + "---\n"
-#       sleep(1.0)
-#     end
-#   end
-# end
