@@ -2,7 +2,7 @@
 require_relative 'startup'
 require 'net/http/persistent'
 require 'json'
-require 'lrucache'
+require 'rufus-lru'
 
 module Archon
 
@@ -102,7 +102,7 @@ module Archon
   class ArchonRecord
     include RecordSetupHelpers
     include EnumLookupHelpers
-    @@cache = LRUCache.new(:max_size => 300, :default => false, :ttl => 600)
+    @@cache = Rufus::Lru::Hash.new(300)
 
     def self.each(instantiate=true)
       raise NoArchonClientException unless Thread.current[:archon_client]
@@ -200,7 +200,7 @@ module Archon
 
     def self.find(id)
       import_id = import_id_for(id)
-      if @@cache[import_id].nil?
+      if @@cache.has_key?(import_id) && @@cache[import_id].nil?
         return unfound(id)
       end
 
@@ -354,9 +354,7 @@ module Archon
 
 
     def get_json(endpoint, usecache=true)
-      @http_cache ||= LRUCache.new(
-                                   :max_size => Appdata.archon_page_cache_size, 
-                                   :default => false)
+      @http_cache ||= Rufus::Lru::Hash.new(Appdata.archon_page_cache_size)
 
       # look at in-memory cache
       if @http_cache[endpoint]
