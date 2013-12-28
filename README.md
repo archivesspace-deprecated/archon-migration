@@ -4,7 +4,7 @@ Archon2ArchivesSpace README
 
 You will need to have java installed to run this service. Example:
 
-	java -version
+    java -version
     -> Java(TM) SE Runtime Environment (build 1.7.0_17-b02)
     -> Java HotSpot(TM) 64-Bit Server VM (build 23.7-b01, mixed mode)
 
@@ -14,7 +14,7 @@ Download the .war file from the Releases page: https://github.com/lcdhoffman/arc
 
 To run the service:
 
-	java -jar archon-migration.war
+    java -jar archon-migration.war
 
 This will start the application within an embedded webserver. The default port of the webserver is 8080.
 
@@ -27,7 +27,7 @@ You can build a distribution by cloning the source code:
 
 and using warbler to build a web application archive:
 
-	gem install warbler
+    gem install warbler
     warble executable war
 
 Now visit your application at http://localhost:8080
