@@ -14,7 +14,7 @@ Download the .war file from the Releases page: https://github.com/lcdhoffman/arc
 
 To run the service:
 
-    java -jar archon-migration.war
+    java -jar archon-migration.war [--httpPort=XXXX]
 
 This will start the application within an embedded webserver. The default port of the webserver is 8080.
 
