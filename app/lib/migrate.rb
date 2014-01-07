@@ -24,9 +24,6 @@ class MigrationJob
 
     Archon.record_type(:digitalfile).base_url = @args[:do_baseurl]
 
-    # 1 job per thread
-    raise "Job thread occupied." if Thread.current[:archon_migration_job]
-
     @aspace = ArchivesSpace::Client.new(
                                         :url => @args[:aspace_url],
                                         :user => @args[:aspace_user],
@@ -51,7 +48,6 @@ class MigrationJob
       FileUtils.rm_rf(download_path)
     end
 
-    Thread.current[:archon_migration_job] = self
   end
 
 

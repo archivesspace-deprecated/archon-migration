@@ -47,7 +47,12 @@ class MigrationService < Sinatra::Base
 
 
   get '/' do
-    erb :index
+    $busy ||= Atomic.new(false)
+    if $busy.value
+      erb :busy
+    else
+      erb :index
+    end
   end
 
 
@@ -57,28 +62,23 @@ class MigrationService < Sinatra::Base
 
 
   post '/jobs' do
-    if $busy
-      return Enumerator.new do |y|
-        y << JSON.generate({
-                             :type => :error,
-                             :body => "Sorry, another user is currently waiting for a migration to complete. Check back later, and if this message persists, contact your server administrator"
-                           }) + "---\n"
-      end
-    end
-    
-    $busy = true
+
+    raise "BUSY" if $busy.value
+    $busy.value = true
     
     $log.debug("POST /jobs with params: #{params.inspect}")
 
     Enumerator.new do |y|
       begin
         stamp = Time.now.strftime("%Y-%m-%d-%H-%M-%S")
-        $logfile = File.new(Appdata.app_dir + "/public/log-#{stamp}.txt", 'w')
-        $syslog = Logger.new($logfile)
-        $log = MigrationLog.new(y, $syslog)
+        logfile = File.new(Appdata.app_dir + "/public/log-#{stamp}.txt", 'w')
+        syslog = Logger.new(logfile)
+        # todo - separate logs per thread to support
+        # parallel jobs
+        $log = MigrationLog.new(y, syslog)
         y << JSON.generate({
                              :type => :log, 
-                             :file => File.basename($logfile.path)
+                             :file => File.basename(logfile.path)
                            }) + "---\n"
 
         m = MigrationJob.new(params[:job])
@@ -94,9 +94,9 @@ class MigrationService < Sinatra::Base
         $log.debug(e.backtrace)
         y << JSON.generate({:type => :error, :body => e.to_s}) + "---\n"
       ensure
-        $log = $syslog
+        $log = syslog
         $log.close
-        $busy = false
+        $busy.value = false
       end
     end
   end
