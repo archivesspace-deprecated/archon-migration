@@ -2,7 +2,7 @@ require_relative 'startup'
 require_relative 'archon_client'
 require_relative 'archivesspace_client'
 require_relative 'migration_helpers'
-require 'zip/zip'
+require 'zip'
 
 
 class MigrationJob
@@ -23,11 +23,6 @@ class MigrationJob
     @args[:do_baseurl] ||= 'http://example.com'
 
     Archon.record_type(:digitalfile).base_url = @args[:do_baseurl]
-
-    # 1 job per thread
-    raise "Job thread occupied." if Thread.current[:archon_migration_job]
-    Thread.current[:archon_migration_job] = self
-
 
     @aspace = ArchivesSpace::Client.new(
                                         :url => @args[:aspace_url],
@@ -503,7 +498,7 @@ to an Agent. The matching Archon ID for the #{obj.jsonmodel_type} record is
     directory = Dir.tmpdir + "/archon_bitstreams/"
     zipfile_name = File.join(File.dirname(__FILE__), '../', 'public', 'bitstreams.zip')
    
-    Zip::ZipFile.open(zipfile_name, Zip::ZipFile::CREATE) do |zipfile|
+    Zip::File.open(zipfile_name, Zip::File::CREATE) do |zipfile|
       Dir.glob("#{directory}*.*").each do |file|
         zipfile.add(file.sub(directory, ''), file)
       end
