@@ -43,7 +43,7 @@ Appdata.default_archon_user             'admin'
 
 Appdata.default_archon_password         'admin'
 
-Appdata.default_aspace_url              'http://localhost:4567'
+Appdata.default_aspace_url              'http://localhost:8089'
 
 Appdata.default_aspace_user             'admin'
 
