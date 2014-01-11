@@ -56,13 +56,8 @@ class MigrationService < Sinatra::Base
   end
 
 
-  get '/jobs/new' do
-    erb :"jobs/new"
-  end
-
-
   post '/jobs' do
-
+    $busy ||= Atomic.new(false)
     raise "BUSY" if $busy.value
     $busy.value = true
     
