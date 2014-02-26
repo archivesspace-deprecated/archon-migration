@@ -209,13 +209,16 @@ Archon.record_type(:content) do
     position = rec['SortOrder'] unless position
     position = pad(position, 3)
     parent_id = rec['ParentID']
+    parent = nil
 
-    return position.to_i if  parent_id == '0' || parent_id.nil?
+    if parent_id && parent_id != '0'
+      parent = find(parent_id)
+      if parent.nil?
+        return nil # orphaned component
+      end
+    end
 
-    parent = find(parent_id)
-    if parent.nil?
-      return nil # orphaned component
-    elsif parent['ContentType'] == '2'
+    if parent && parent['ContentType'] == '2'
       xtra << rec['SortOrder']
       figure_out_position(parent, parent['SortOrder'], xtra)
     else
