@@ -53,7 +53,9 @@ Archon.record_type(:content) do
       real_parent_id = nearest_non_physical_ancestor(rec['ParentID'])
       obj.position = figure_out_position(rec)
       if real_parent_id.nil?
-        $log.warn(%{Bad foreign key: can't locate the record associated with 'ParentID' in this record: #{rec.inspect}})
+      	  # set the position to eight 9s so we can ignore this orthan record -- NS
+      	  obj.position = 99999999
+      	  $log.warn(%{Bad foreign key: can't locate the record associated with 'ParentID' in this record: #{rec.inspect}})
       elsif real_parent_id == '0'
         $log.warn("An intellectual Content record with a physical Content record as its parent is being placed at the top level of the resource hierarchy")        
       else

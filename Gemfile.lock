@@ -1,16 +1,20 @@
 GEM
   remote: https://rubygems.org/
   specs:
+    atomic (1.1.14)
     atomic (1.1.14-java)
     diff-lcs (1.2.5)
     execjs (2.0.2)
     jsmin (1.0.1)
+    json (1.8.1)
     json (1.8.1-java)
     json-schema (1.0.10)
     mime-types (2.0)
     minitest (5.2.0)
     multi_json (1.8.2)
     net-http-persistent (2.9)
+    puma (2.7.1)
+      rack (>= 1.1, < 2.0)
     puma (2.7.1-java)
       rack (>= 1.1, < 2.0)
     rack (1.5.2)
@@ -41,6 +45,7 @@ GEM
 
 PLATFORMS
   java
+  ruby
 
 DEPENDENCIES
   atomic

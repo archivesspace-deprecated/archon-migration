@@ -216,8 +216,14 @@ class MigrationJob
                   obj.instances << instance
                 end
               end
-
-              batch.unshift(obj_or_cont)
+              
+              # check to make sure this is not an orthaned content record
+              # before adding to the batch record array -- NS
+              if obj.position != 99999999
+              	  batch.unshift(obj_or_cont)
+              else 
+              	  emit_status("Skipping orthaned Content record #{obj.title}", :flash)
+              end
             end
           end
         end

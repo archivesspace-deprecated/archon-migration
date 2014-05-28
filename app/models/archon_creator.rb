@@ -97,12 +97,12 @@ Archon.record_type(:creator) do
       obj.notes << note
     end
 
-    if rec['CreatorRelationships']
-      rec['CreatorRelationships'].each do |archon_relationship|
-        aspace_relationship = create_relationship(obj.jsonmodel_type, archon_relationship)
-        obj.related_agents << aspace_relationship unless aspace_relationship.nil?
-      end
-    end
+    #if rec['CreatorRelationships']
+    #  rec['CreatorRelationships'].each do |archon_relationship|
+    #    aspace_relationship = create_relationship(obj.jsonmodel_type, archon_relationship)
+    #    obj.related_agents << aspace_relationship unless aspace_relationship.nil?
+    #  end
+    #end
 
     yield obj
   end
