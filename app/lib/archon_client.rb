@@ -483,7 +483,7 @@ module Archon
       response = http_request(uri, req)
       $log.debug("Raw Archon response : #{response.inspect}")
       if response.code != '200'
-        raise "ERROR Getting JSON #{response.inspect}"
+      	  raise "ERROR Getting JSON #{response.inspect} #{response.body}"
       else
         return response.body
       end

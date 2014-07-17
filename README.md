@@ -22,7 +22,7 @@ This will start the application within an embedded webserver. The default port o
 
 You can build a distribution by cloning the source code:
 
-    git clone https://github.com/lcdhoffman/archon-migration.git
+    git clone https://github.com/archivesspace/archon-migration.git
     cd archon-migration
 
 and using warbler to build a web application archive:
@@ -31,3 +31,7 @@ and using warbler to build a web application archive:
     warble executable war
 
 Now visit your application at http://localhost:8080
+
+For running the application without building a JRuby release
+	cd archon-migration
+	rackup -p 8080
