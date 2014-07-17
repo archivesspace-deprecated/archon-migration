@@ -32,12 +32,7 @@ Install the application dependencies listed in the Gemfile:
 
 Now run the application:
 
-    ruby app/main.rb
-
-The service runs on port 4568 by default. To change this:
-
-	touch config/config_local.rb
-    echo "Appdata.port_number YOUR_FAVORITE_PORT_HERE" >> config/config_local.rb
+    rackup -p 4568
 
 # Daemonizing the Service
 
