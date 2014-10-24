@@ -39,7 +39,7 @@ Archon.record_type(:collection) do
         obj.send("id_#{i}=", id) 
         i += 1
       else
-        $low.warn("Discarding an identifier (#{id}) dervied from the linked Classification. Not enough slots in ArchivesSpace. Record: #{rec.inspect}")
+        $log.warn("Discarding an identifier (#{id}) dervied from the linked Classification. Not enough slots in ArchivesSpace. Record: #{rec.inspect}")
       end 
     end
 
