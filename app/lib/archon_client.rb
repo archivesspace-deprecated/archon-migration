@@ -355,10 +355,12 @@ module Archon
 
     def get_json(endpoint, usecache=true)
       @http_cache ||= Rufus::Lru::Hash.new(Appdata.archon_page_cache_size)
+      cacheit = true;
 
       # look at in-memory cache
       if @http_cache[endpoint]
         json_string = @http_cache[endpoint]
+        cacheit = false
       # look at / send to db cache
       elsif Appdata.use_dbcache
         db = get_db
@@ -378,7 +380,7 @@ module Archon
       end
 
       # send to in-memory cache
-      if usecache 
+      if usecache && cacheit
         @http_cache[endpoint] = json_string
       end
 
