@@ -16,6 +16,10 @@ To run the service:
 
     java -jar archon-migration.war [--httpPort=XXXX]
 
+If you are running the service on a Windows server use the -Dfile flag to ensure proper migration of quotations:
+
+    java -Dfile.encoding=UTF-8 -jar archon-migration.war [--httpPort=XXXX]
+
 This will start the application within an embedded webserver. The default port of the webserver is 8080.
 
 # Building the distribution
