@@ -12,7 +12,7 @@ Archon.record_type(:subject) do
       obj.terms = terms
       obj.external_ids = [{:external_id => rec["ID"], :source => "Archon"}]
       obj.vocabulary = '/vocabularies/1'
-      obj.source = get_source(rec["SubjectSourceID"])
+      obj.source = get_source(get_source_id(rec))
     end
 
     obj.uri = obj.class.uri_for(rec.import_id)
@@ -24,6 +24,13 @@ Archon.record_type(:subject) do
     yield obj
   end
 
+  def self.get_source_id(rec)
+    if rec['SubjectSourceID'] && rec['ParentID'] == '0'
+      return rec['SubjectSourceID']
+    else
+      get_source_id(rec['Parent'])
+    end
+  end
 
   def self.get_source(id)
     rec = Archon.record_type(:subjectsource).find(id)
@@ -85,7 +92,7 @@ Archon.record_type(:subject) do
 
   def self.name_template(rec)
     hsh = super
-    hsh.merge({:source => get_source(rec['SubjectSourceID'])})
+    hsh.merge({:source => get_source(get_source_id(rec))})
   end
     
 end

@@ -54,7 +54,7 @@ Appdata.default_aspace_password         'admin'
 # Collection, divided by 100. So, e.g., if you have a Collection
 # with 50,000 Content records, set this to 500 if your server
 # has sufficient memory
-Appdata.archon_page_cache_size          400 
+Appdata.archon_page_cache_size          600
 
 Appdata.use_dbcache											false
 
