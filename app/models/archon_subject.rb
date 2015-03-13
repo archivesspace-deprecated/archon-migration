@@ -25,7 +25,10 @@ Archon.record_type(:subject) do
   end
 
   def self.get_source_id(rec)
-    if rec['SubjectSourceID'] && rec['ParentID'] == '0'
+    if rec.nil?
+      # return the ID for local subject source
+      return 5
+    elsif rec['SubjectSourceID'] && rec['ParentID'] == '0'
       return rec['SubjectSourceID']
     else
       get_source_id(rec['Parent'])
