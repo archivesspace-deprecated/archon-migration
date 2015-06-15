@@ -77,16 +77,36 @@ class MigrationJob
     # 3: Global scope objects (agents and subjects)
     @globals_map = migrate_creators_and_subjects
 
-    # 4: Iterate through repositories
+    # 4: since it's possible that no repository with ID = 1
+    # exists in the Archon database, we need to set the default repository to
+    # the one with the lowest number, otherwise no Accessions records will migrate
+    set_default_repository
+
+    # 5: Iterate through repositories
     @repo_map.each do |archon_repo_id, aspace_repo_uri|
       migrate_repository(archon_repo_id, aspace_repo_uri)
     end
 
-    # 5: Package Digital File content for Download
+    # 6: Package Digital File content for Download
     package_digital_files
     emit_status("Migration complete. Download the log to review warnings")
   end
 
+  # method to set the default repository id
+  def set_default_repository()
+    smallest_repo_id = 100
+
+    @repo_map.keys.each do |archon_repo_id|
+      if(archon_repo_id.to_i < smallest_repo_id)
+        smallest_repo_id = archon_repo_id.to_i
+      end
+    end
+
+    if(@args[:default_repository] != smallest_repo_id.to_s)
+      @args[:default_repository] = smallest_repo_id.to_s
+      emit_status("Default Repository ID Reset to #{smallest_repo_id}")
+    end
+  end
 
   def migrate_repository(archon_repo_id, aspace_repo_uri)
     emit_status("Migrating Repository #{archon_repo_id}")
